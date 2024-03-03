@@ -5,6 +5,7 @@ import cn.nukkit.item.customitem.CustomItem;
 import cn.nukkit.item.customitem.CustomItemDefinition;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.plugin.Plugin;
+import cn.nukkit.Server;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.sunlan.fastreflection.FastConstructor;
 import me.sunlan.fastreflection.FastMemberLoader;
@@ -30,6 +31,9 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
 
     @Override
     public void init() {
+        Server srv = Server.getInstance();
+        boolean edu = srv.isEduEnabled();
+
         if (isLoad.getAndSet(true)) return;
         register0(ACACIA_BOAT, ItemAcaciaBoat.class);
         register0(ACACIA_CHEST_BOAT, ItemAcaciaChestBoat.class);
@@ -48,7 +52,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(AXOLOTL_BUCKET, ItemAxolotlBucket.class);
         register0(AXOLOTL_SPAWN_EGG, ItemAxolotlSpawnEgg.class);
         register0(BAKED_POTATO, ItemBakedPotato.class);
-//        register0(BALLOON, ItemBalloon.class);//edu
+        if(edu) register0(BALLOON, ItemBalloon.class);//edu
         register0(BAMBOO_CHEST_RAFT, ItemBambooChestRaft.class);
         register0(BAMBOO_DOOR, ItemBambooDoor.class);
         register0(BAMBOO_HANGING_SIGN, ItemBambooHangingSign.class);
@@ -73,7 +77,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(BLAZE_POWDER, ItemBlazePowder.class);
         register0(BLAZE_ROD, ItemBlazeRod.class);
         register0(BLAZE_SPAWN_EGG, ItemBlazeSpawnEgg.class);
-//        register0(BLEACH, ItemBleach.class); //edu
+        if(edu) register0(BLEACH, ItemBleach.class); //edu
         register0(BLUE_DYE, ItemBlueDye.class);
         register0(BOAT, ItemBoat.class);
         register0(BONE, ItemBone.class);
@@ -126,7 +130,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(COMMAND_BLOCK_MINECART, ItemCommandBlockMinecart.class);
         register0(COMPARATOR, ItemComparator.class);
         register0(COMPASS, ItemCompass.class);
-//        register0(COMPOUND, ItemCompound.class);//edu
+        if(edu) register0(COMPOUND, ItemCompound.class);//edu
         register0(CONCRETE, ItemConcrete.class);
         register0(CONCRETE_POWDER, ItemConcretePowder.class);
         register0(COOKED_BEEF, ItemCookedBeef.class);
@@ -218,7 +222,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(GLOW_FRAME, ItemGlowFrame.class);
         register0(GLOW_INK_SAC, ItemGlowInkSac.class);
         register0(GLOW_SQUID_SPAWN_EGG, ItemGlowSquidSpawnEgg.class);
-        //register0(GLOW_STICK, ItemGlowStick.class); //edu
+        if(edu) register0(GLOW_STICK, ItemGlowStick.class); //edu
         register0(GLOWSTONE_DUST, ItemGlowstoneDust.class);
         register0(GOAT_HORN, ItemGoatHorn.class);
         register0(GOAT_SPAWN_EGG, ItemGoatSpawnEgg.class);
@@ -252,7 +256,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(HOST_ARMOR_TRIM_SMITHING_TEMPLATE, ItemHostArmorTrimSmithingTemplate.class);
         register0(HOWL_POTTERY_SHERD, ItemHowlPotterySherd.class);
         register0(HUSK_SPAWN_EGG, ItemHuskSpawnEgg.class);
-//        register0(ICE_BOMB, ItemIceBomb.class); //EDU
+        if(edu) register0(ICE_BOMB, ItemIceBomb.class); //EDU
         register0(INK_SAC, ItemInkSac.class);
         register0(IRON_AXE, ItemIronAxe.class);
         register0(IRON_BOOTS, ItemIronBoots.class);
@@ -299,7 +303,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(MANGROVE_DOOR, ItemMangroveDoor.class);
         register0(MANGROVE_HANGING_SIGN, ItemMangroveHangingSign.class);
         register0(MANGROVE_SIGN, ItemMangroveSign.class);
-//        register0(MEDICINE, ItemMedicine.class);//edu
+        if(edu) register0(MEDICINE, ItemMedicine.class);//edu
         register0(MELON_SEEDS, ItemMelonSeeds.class);
         register0(MELON_SLICE, ItemMelonSlice.class);
         register0(MILK_BUCKET, ItemMilkBucket.class);
@@ -391,7 +395,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(RABBIT_SPAWN_EGG, ItemRabbitSpawnEgg.class);
         register0(RABBIT_STEW, ItemRabbitStew.class);
         register0(RAISER_ARMOR_TRIM_SMITHING_TEMPLATE, ItemRaiserArmorTrimSmithingTemplate.class);
-        //register0(RAPID_FERTILIZER, ItemRapidFertilizer.class); //edu
+        if(edu) register0(RAPID_FERTILIZER, ItemRapidFertilizer.class); //edu
         register0(RAVAGER_SPAWN_EGG, ItemRavagerSpawnEgg.class);
         register0(RAW_COPPER, ItemRawCopper.class);
         register0(RAW_GOLD, ItemRawGold.class);
@@ -432,7 +436,7 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
         register0(SNOW_GOLEM_SPAWN_EGG, ItemSnowGolemSpawnEgg.class);
         register0(SNOWBALL, ItemSnowball.class);
         register0(SOUL_CAMPFIRE, ItemSoulCampfire.class);
-//        register0(SPARKLER, ItemSparkler.class);//edu
+        if(edu) register0(SPARKLER, ItemSparkler.class);//edu
         register0(SPAWN_EGG, ItemSpawnEgg.class);
         register0(SPIDER_EYE, ItemSpiderEye.class);
         register0(SPIDER_SPAWN_EGG, ItemSpiderSpawnEgg.class);

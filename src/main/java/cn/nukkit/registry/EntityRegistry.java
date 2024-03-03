@@ -122,7 +122,7 @@ public class EntityRegistry implements EntityID, IRegistry<EntityRegistry.Entity
 //        registerInternal(new EntityDefinition(FIREBALL, "", 85, false, false), EntityFireball.class);
         registerInternal(new EntityDefinition(SPLASH_POTION, "", 86, false, true), EntitySplashPotion.class);
         registerInternal(new EntityDefinition(ENDER_PEARL, "", 87, false, false), EntityEnderPearl.class);
-//        registerInternal(new EntityDefinition(LEASH_KNOT, "", 88, false, true), EntityLeashKnot.class);
+        registerInternal(new EntityDefinition(LEASH_KNOT, "", 88, false, true), EntityLeashKnot.class);
 //        registerInternal(new EntityDefinition(WITHER_SKULL, "", 89, false, false), EntityWitherSkull.class);//This is the skull fired by Wither
         registerInternal(new EntityDefinition(BOAT, "", 90, false, true), EntityBoat.class);
 //        registerInternal(new EntityDefinition(WITHER_SKULL_DANGEROUS, "", 91, false, false), EntityWitherSkullDangerous.class);
@@ -139,7 +139,7 @@ public class EntityRegistry implements EntityID, IRegistry<EntityRegistry.Entity
         registerInternal(new EntityDefinition(EVOCATION_ILLAGER, "", 104, true, true), EntityEvocationIllager.class);
         registerInternal(new EntityDefinition(VEX, "", 105, true, true), EntityVex.class);
 //        registerInternal(new EntityDefinition(ICE_BOMB, "", 106, false, false), EntityIceBomb.class);
-//        registerInternal(new EntityDefinition(BALLOON, "", 107, false, false), EntityBalloon.class);
+        registerInternal(new EntityDefinition(BALLOON, "", 107, false, false), EntityBalloon.class);
         registerInternal(new EntityDefinition(PUFFERFISH, "", 108, true, true), EntityPufferfish.class);
         registerInternal(new EntityDefinition(SALMON, "", 109, true, true), EntitySalmon.class);
         registerInternal(new EntityDefinition(DROWNED, "", 110, true, true), EntityDrowned.class);

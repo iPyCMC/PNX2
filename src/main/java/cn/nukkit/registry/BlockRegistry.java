@@ -6,6 +6,7 @@ import cn.nukkit.block.customblock.CustomBlockDefinition;
 import cn.nukkit.item.ItemBlock;
 import cn.nukkit.level.Level;
 import cn.nukkit.plugin.Plugin;
+import cn.nukkit.Server;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.extern.slf4j.Slf4j;
 import me.sunlan.fastreflection.FastConstructor;
@@ -39,6 +40,8 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
 
     @Override
     public void init() {
+        Server srv = Server.getInstance();
+        boolean edu = srv.isEduEnabled();
         if (isLoad.getAndSet(true)) return;
         register0(TRAPDOOR, BlockTrapdoor.class);// done.
         register0(ACACIA_BUTTON, BlockAcaciaButton.class);// done.
@@ -164,7 +167,7 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
         register0(CAKE, BlockCake.class);// done.
         register0(CALCITE, BlockCalcite.class);// done.
         register0(CALIBRATED_SCULK_SENSOR, BlockCalibratedSculkSensor.class);// done.
-//        register0(CAMERA, BlockCamera.class);//edu
+        if(edu) register0(CAMERA, BlockCamera.class);//edu
         register0(CAMPFIRE, BlockCampfire.class);// done.
         register0(CANDLE, BlockCandle.class);// done.
         register0(CANDLE_CAKE, BlockCandleCake.class);// done.
@@ -177,8 +180,8 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
         register0(CAVE_VINES_HEAD_WITH_BERRIES, BlockCaveVinesHeadWithBerries.class);// done.
         register0(CHAIN, BlockChain.class);// done.
         register0(CHAIN_COMMAND_BLOCK, BlockChainCommandBlock.class);// done.
-//        register0(CHEMICAL_HEAT, BlockChemicalHeat.class);//edu
-//        register0(CHEMISTRY_TABLE, BlockChemistryTable.class);//edu
+        if(edu) register0(CHEMICAL_HEAT, BlockChemicalHeat.class);//edu
+        if(edu) register0(CHEMISTRY_TABLE, BlockChemistryTable.class);//edu
         register0(CHERRY_BUTTON, BlockCherryButton.class);// done.
         register0(CHERRY_DOOR, BlockCherryDoor.class);// done.
         register0(CHERRY_DOUBLE_SLAB, BlockCherryDoubleSlab.class);// done.
@@ -218,8 +221,8 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
         register0(COBBLESTONE, BlockCobblestone.class);// done.
         register0(COBBLESTONE_WALL, BlockCobblestoneWall.class);// done.
         register0(COCOA, BlockCocoa.class);// done.
-//        register0(COLORED_TORCH_BP, BlockColoredTorchBp.class);//edu
-//        register0(COLORED_TORCH_RG, BlockColoredTorchRg.class);//edu
+        if(edu) register0(COLORED_TORCH_BP, BlockColoredTorchBp.class);//edu
+        if(edu) register0(COLORED_TORCH_RG, BlockColoredTorchRg.class);//edu
         register0(COMMAND_BLOCK, BlockCommandBlock.class);// done.
         register0(COMPOSTER, BlockComposter.class);// done.
         register0(CONDUIT, BlockConduit.class);// done.
@@ -335,125 +338,127 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
         register0(DRIED_KELP_BLOCK, BlockDriedKelpBlock.class);// done.
         register0(DRIPSTONE_BLOCK, BlockDripstoneBlock.class);// done.
         register0(DROPPER, BlockDropper.class);// done.
-//        register0(ELEMENT_0, BlockElement0.class);
-//        register0(ELEMENT_1, BlockElement1.class);
-//        register0(ELEMENT_10, BlockElement10.class);
-//        register0(ELEMENT_100, BlockElement100.class);
-//        register0(ELEMENT_101, BlockElement101.class);
-//        register0(ELEMENT_102, BlockElement102.class);
-//        register0(ELEMENT_103, BlockElement103.class);
-//        register0(ELEMENT_104, BlockElement104.class);
-//        register0(ELEMENT_105, BlockElement105.class);
-//        register0(ELEMENT_106, BlockElement106.class);
-//        register0(ELEMENT_107, BlockElement107.class);
-//        register0(ELEMENT_108, BlockElement108.class);
-//        register0(ELEMENT_109, BlockElement109.class);
-//        register0(ELEMENT_11, BlockElement11.class);
-//        register0(ELEMENT_110, BlockElement110.class);
-//        register0(ELEMENT_111, BlockElement111.class);
-//        register0(ELEMENT_112, BlockElement112.class);
-//        register0(ELEMENT_113, BlockElement113.class);
-//        register0(ELEMENT_114, BlockElement114.class);
-//        register0(ELEMENT_115, BlockElement115.class);
-//        register0(ELEMENT_116, BlockElement116.class);
-//        register0(ELEMENT_117, BlockElement117.class);
-//        register0(ELEMENT_118, BlockElement118.class);
-//        register0(ELEMENT_12, BlockElement12.class);
-//        register0(ELEMENT_13, BlockElement13.class);
-//        register0(ELEMENT_14, BlockElement14.class);
-//        register0(ELEMENT_15, BlockElement15.class);
-//        register0(ELEMENT_16, BlockElement16.class);
-//        register0(ELEMENT_17, BlockElement17.class);
-//        register0(ELEMENT_18, BlockElement18.class);
-//        register0(ELEMENT_19, BlockElement19.class);
-//        register0(ELEMENT_2, BlockElement2.class);
-//        register0(ELEMENT_20, BlockElement20.class);
-//        register0(ELEMENT_21, BlockElement21.class);
-//        register0(ELEMENT_22, BlockElement22.class);
-//        register0(ELEMENT_23, BlockElement23.class);
-//        register0(ELEMENT_24, BlockElement24.class);
-//        register0(ELEMENT_25, BlockElement25.class);
-//        register0(ELEMENT_26, BlockElement26.class);
-//        register0(ELEMENT_27, BlockElement27.class);
-//        register0(ELEMENT_28, BlockElement28.class);
-//        register0(ELEMENT_29, BlockElement29.class);
-//        register0(ELEMENT_3, BlockElement3.class);
-//        register0(ELEMENT_30, BlockElement30.class);
-//        register0(ELEMENT_31, BlockElement31.class);
-//        register0(ELEMENT_32, BlockElement32.class);
-//        register0(ELEMENT_33, BlockElement33.class);
-//        register0(ELEMENT_34, BlockElement34.class);
-//        register0(ELEMENT_35, BlockElement35.class);
-//        register0(ELEMENT_36, BlockElement36.class);
-//        register0(ELEMENT_37, BlockElement37.class);
-//        register0(ELEMENT_38, BlockElement38.class);
-//        register0(ELEMENT_39, BlockElement39.class);
-//        register0(ELEMENT_4, BlockElement4.class);
-//        register0(ELEMENT_40, BlockElement40.class);
-//        register0(ELEMENT_41, BlockElement41.class);
-//        register0(ELEMENT_42, BlockElement42.class);
-//        register0(ELEMENT_43, BlockElement43.class);
-//        register0(ELEMENT_44, BlockElement44.class);
-//        register0(ELEMENT_45, BlockElement45.class);
-//        register0(ELEMENT_46, BlockElement46.class);
-//        register0(ELEMENT_47, BlockElement47.class);
-//        register0(ELEMENT_48, BlockElement48.class);
-//        register0(ELEMENT_49, BlockElement49.class);
-//        register0(ELEMENT_5, BlockElement5.class);
-//        register0(ELEMENT_50, BlockElement50.class);
-//        register0(ELEMENT_51, BlockElement51.class);
-//        register0(ELEMENT_52, BlockElement52.class);
-//        register0(ELEMENT_53, BlockElement53.class);
-//        register0(ELEMENT_54, BlockElement54.class);
-//        register0(ELEMENT_55, BlockElement55.class);
-//        register0(ELEMENT_56, BlockElement56.class);
-//        register0(ELEMENT_57, BlockElement57.class);
-//        register0(ELEMENT_58, BlockElement58.class);
-//        register0(ELEMENT_59, BlockElement59.class);
-//        register0(ELEMENT_6, BlockElement6.class);
-//        register0(ELEMENT_60, BlockElement60.class);
-//        register0(ELEMENT_61, BlockElement61.class);
-//        register0(ELEMENT_62, BlockElement62.class);
-//        register0(ELEMENT_63, BlockElement63.class);
-//        register0(ELEMENT_64, BlockElement64.class);
-//        register0(ELEMENT_65, BlockElement65.class);
-//        register0(ELEMENT_66, BlockElement66.class);
-//        register0(ELEMENT_67, BlockElement67.class);
-//        register0(ELEMENT_68, BlockElement68.class);
-//        register0(ELEMENT_69, BlockElement69.class);
-//        register0(ELEMENT_7, BlockElement7.class);
-//        register0(ELEMENT_70, BlockElement70.class);
-//        register0(ELEMENT_71, BlockElement71.class);
-//        register0(ELEMENT_72, BlockElement72.class);
-//        register0(ELEMENT_73, BlockElement73.class);
-//        register0(ELEMENT_74, BlockElement74.class);
-//        register0(ELEMENT_75, BlockElement75.class);
-//        register0(ELEMENT_76, BlockElement76.class);
-//        register0(ELEMENT_77, BlockElement77.class);
-//        register0(ELEMENT_78, BlockElement78.class);
-//        register0(ELEMENT_79, BlockElement79.class);
-//        register0(ELEMENT_8, BlockElement8.class);
-//        register0(ELEMENT_80, BlockElement80.class);
-//        register0(ELEMENT_81, BlockElement81.class);
-//        register0(ELEMENT_82, BlockElement82.class);
-//        register0(ELEMENT_83, BlockElement83.class);
-//        register0(ELEMENT_84, BlockElement84.class);
-//        register0(ELEMENT_85, BlockElement85.class);
-//        register0(ELEMENT_86, BlockElement86.class);
-//        register0(ELEMENT_87, BlockElement87.class);
-//        register0(ELEMENT_88, BlockElement88.class);
-//        register0(ELEMENT_89, BlockElement89.class);
-//        register0(ELEMENT_9, BlockElement9.class);
-//        register0(ELEMENT_90, BlockElement90.class);
-//        register0(ELEMENT_91, BlockElement91.class);
-//        register0(ELEMENT_92, BlockElement92.class);
-//        register0(ELEMENT_93, BlockElement93.class);
-//        register0(ELEMENT_94, BlockElement94.class);
-//        register0(ELEMENT_95, BlockElement95.class);
-//        register0(ELEMENT_96, BlockElement96.class);
-//        register0(ELEMENT_97, BlockElement97.class);
-//        register0(ELEMENT_98, BlockElement98.class);
-//        register0(ELEMENT_99, BlockElement99.class);
+        if(edu) {
+            register0(ELEMENT_0, BlockElement0.class);
+            register0(ELEMENT_1, BlockElement1.class);
+            register0(ELEMENT_10, BlockElement10.class);
+            register0(ELEMENT_100, BlockElement100.class);
+            register0(ELEMENT_101, BlockElement101.class);
+            register0(ELEMENT_102, BlockElement102.class);
+            register0(ELEMENT_103, BlockElement103.class);
+            register0(ELEMENT_104, BlockElement104.class);
+            register0(ELEMENT_105, BlockElement105.class);
+            register0(ELEMENT_106, BlockElement106.class);
+            register0(ELEMENT_107, BlockElement107.class);
+            register0(ELEMENT_108, BlockElement108.class);
+            register0(ELEMENT_109, BlockElement109.class);
+            register0(ELEMENT_11, BlockElement11.class);
+            register0(ELEMENT_110, BlockElement110.class);
+            register0(ELEMENT_111, BlockElement111.class);
+            register0(ELEMENT_112, BlockElement112.class);
+            register0(ELEMENT_113, BlockElement113.class);
+            register0(ELEMENT_114, BlockElement114.class);
+            register0(ELEMENT_115, BlockElement115.class);
+            register0(ELEMENT_116, BlockElement116.class);
+            register0(ELEMENT_117, BlockElement117.class);
+            register0(ELEMENT_118, BlockElement118.class);
+            register0(ELEMENT_12, BlockElement12.class);
+            register0(ELEMENT_13, BlockElement13.class);
+            register0(ELEMENT_14, BlockElement14.class);
+            register0(ELEMENT_15, BlockElement15.class);
+            register0(ELEMENT_16, BlockElement16.class);
+            register0(ELEMENT_17, BlockElement17.class);
+            register0(ELEMENT_18, BlockElement18.class);
+            register0(ELEMENT_19, BlockElement19.class);
+            register0(ELEMENT_2, BlockElement2.class);
+            register0(ELEMENT_20, BlockElement20.class);
+            register0(ELEMENT_21, BlockElement21.class);
+            register0(ELEMENT_22, BlockElement22.class);
+            register0(ELEMENT_23, BlockElement23.class);
+            register0(ELEMENT_24, BlockElement24.class);
+            register0(ELEMENT_25, BlockElement25.class);
+            register0(ELEMENT_26, BlockElement26.class);
+            register0(ELEMENT_27, BlockElement27.class);
+            register0(ELEMENT_28, BlockElement28.class);
+            register0(ELEMENT_29, BlockElement29.class);
+            register0(ELEMENT_3, BlockElement3.class);
+            register0(ELEMENT_30, BlockElement30.class);
+            register0(ELEMENT_31, BlockElement31.class);
+            register0(ELEMENT_32, BlockElement32.class);
+            register0(ELEMENT_33, BlockElement33.class);
+            register0(ELEMENT_34, BlockElement34.class);
+            register0(ELEMENT_35, BlockElement35.class);
+            register0(ELEMENT_36, BlockElement36.class);
+            register0(ELEMENT_37, BlockElement37.class);
+            register0(ELEMENT_38, BlockElement38.class);
+            register0(ELEMENT_39, BlockElement39.class);
+            register0(ELEMENT_4, BlockElement4.class);
+            register0(ELEMENT_40, BlockElement40.class);
+            register0(ELEMENT_41, BlockElement41.class);
+            register0(ELEMENT_42, BlockElement42.class);
+            register0(ELEMENT_43, BlockElement43.class);
+            register0(ELEMENT_44, BlockElement44.class);
+            register0(ELEMENT_45, BlockElement45.class);
+            register0(ELEMENT_46, BlockElement46.class);
+            register0(ELEMENT_47, BlockElement47.class);
+            register0(ELEMENT_48, BlockElement48.class);
+            register0(ELEMENT_49, BlockElement49.class);
+            register0(ELEMENT_5, BlockElement5.class);
+            register0(ELEMENT_50, BlockElement50.class);
+            register0(ELEMENT_51, BlockElement51.class);
+            register0(ELEMENT_52, BlockElement52.class);
+            register0(ELEMENT_53, BlockElement53.class);
+            register0(ELEMENT_54, BlockElement54.class);
+            register0(ELEMENT_55, BlockElement55.class);
+            register0(ELEMENT_56, BlockElement56.class);
+            register0(ELEMENT_57, BlockElement57.class);
+            register0(ELEMENT_58, BlockElement58.class);
+            register0(ELEMENT_59, BlockElement59.class);
+            register0(ELEMENT_6, BlockElement6.class);
+            register0(ELEMENT_60, BlockElement60.class);
+            register0(ELEMENT_61, BlockElement61.class);
+            register0(ELEMENT_62, BlockElement62.class);
+            register0(ELEMENT_63, BlockElement63.class);
+            register0(ELEMENT_64, BlockElement64.class);
+            register0(ELEMENT_65, BlockElement65.class);
+            register0(ELEMENT_66, BlockElement66.class);
+            register0(ELEMENT_67, BlockElement67.class);
+            register0(ELEMENT_68, BlockElement68.class);
+            register0(ELEMENT_69, BlockElement69.class);
+            register0(ELEMENT_7, BlockElement7.class);
+            register0(ELEMENT_70, BlockElement70.class);
+            register0(ELEMENT_71, BlockElement71.class);
+            register0(ELEMENT_72, BlockElement72.class);
+            register0(ELEMENT_73, BlockElement73.class);
+            register0(ELEMENT_74, BlockElement74.class);
+            register0(ELEMENT_75, BlockElement75.class);
+            register0(ELEMENT_76, BlockElement76.class);
+            register0(ELEMENT_77, BlockElement77.class);
+            register0(ELEMENT_78, BlockElement78.class);
+            register0(ELEMENT_79, BlockElement79.class);
+            register0(ELEMENT_8, BlockElement8.class);
+            register0(ELEMENT_80, BlockElement80.class);
+            register0(ELEMENT_81, BlockElement81.class);
+            register0(ELEMENT_82, BlockElement82.class);
+            register0(ELEMENT_83, BlockElement83.class);
+            register0(ELEMENT_84, BlockElement84.class);
+            register0(ELEMENT_85, BlockElement85.class);
+            register0(ELEMENT_86, BlockElement86.class);
+            register0(ELEMENT_87, BlockElement87.class);
+            register0(ELEMENT_88, BlockElement88.class);
+            register0(ELEMENT_89, BlockElement89.class);
+            register0(ELEMENT_9, BlockElement9.class);
+            register0(ELEMENT_90, BlockElement90.class);
+            register0(ELEMENT_91, BlockElement91.class);
+            register0(ELEMENT_92, BlockElement92.class);
+            register0(ELEMENT_93, BlockElement93.class);
+            register0(ELEMENT_94, BlockElement94.class);
+            register0(ELEMENT_95, BlockElement95.class);
+            register0(ELEMENT_96, BlockElement96.class);
+            register0(ELEMENT_97, BlockElement97.class);
+            register0(ELEMENT_98, BlockElement98.class);
+            register0(ELEMENT_99, BlockElement99.class);
+        }
         register0(EMERALD_BLOCK, BlockEmeraldBlock.class);// done.
         register0(EMERALD_ORE, BlockEmeraldOre.class);// done.
         register0(ENCHANTING_TABLE, BlockEnchantingTable.class);// done.
@@ -528,10 +533,11 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
         register0(GREEN_WOOL, BlockGreenWool.class);// done.
         register0(GRINDSTONE, BlockGrindstone.class);// done.
         register0(HANGING_ROOTS, BlockHangingRoots.class);// done.
-//        register0(HARD_GLASS, BlockHardGlass.class);//edu
-//        register0(HARD_GLASS_PANE, BlockHardGlassPane.class);//edu
-//        register0(HARD_STAINED_GLASS, BlockHardStainedGlass.class);//edu
-//        register0(HARD_STAINED_GLASS_PANE, BlockHardStainedGlassPane.class);//edu
+        if(edu) register0(HARD_GLASS, BlockHardGlass.class);//edu
+        if(edu) register0(HARD_GLASS_PANE, BlockHardGlassPane.class);//edu
+        //SOMEHOW THIS DOES NOT EXIST
+        //if(edu) register0(HARD_STAINED_GLASS, BlockHardStainedGlass.class);//edu
+        if(edu) register0(HARD_STAINED_GLASS_PANE, BlockHardStainedGlassPane.class);//edu
         register0(HARDENED_CLAY, BlockHardenedClay.class);// done.
         register0(HAY_BLOCK, BlockHayBlock.class);// done.
         register0(HEAVY_WEIGHTED_PRESSURE_PLATE, BlockHeavyWeightedPressurePlate.class);// done.
@@ -925,7 +931,7 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
 //        register0(TUFF_WALL, BlockTuffWall.class);// experimental
         register0(TURTLE_EGG, BlockTurtleEgg.class);// done.
         register0(TWISTING_VINES, BlockTwistingVines.class);// done.
-//        register0(UNDERWATER_TORCH, BlockUnderwaterTorch.class);//edu
+        if(edu) register0(UNDERWATER_TORCH, BlockUnderwaterTorch.class);//edu
         register0(UNDYED_SHULKER_BOX, BlockUndyedShulkerBox.class);// done.
         register0(UNKNOWN, BlockUnknown.class);// done.
         register0(UNLIT_REDSTONE_TORCH, BlockUnlitRedstoneTorch.class);// done.
