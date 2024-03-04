@@ -223,6 +223,8 @@ public class Server {
 
     private boolean redstoneEnabled = true;
 
+    private boolean eduEnabled = false;
+
 
     /**
      * 配置项是否检查登录时间.<P>Does the configuration item check the login time.
@@ -567,6 +569,7 @@ public class Server {
                 put("allow-shaded", false);
                 put("server-authoritative-movement", "server-auth");// Allowed values: "client-auth", "server-auth", "server-auth-with-rewind"
                 put("network-encryption", true);
+                put("edu-enabled", false);
             }
         });
         // Allow Nether? (determines if we create a nether world if one doesn't exist on startup)
@@ -577,6 +580,8 @@ public class Server {
         this.useTerra = this.properties.getBoolean("use-terra", false);
 
         this.checkLoginTime = this.properties.getBoolean("check-login-time", true);
+
+        this.eduEnabled = this.properties.getBoolean("edu-enabled", false);
 
         if (this.isWaterdogCapable()) {
             this.checkLoginTime = false;
@@ -2933,6 +2938,10 @@ public class Server {
 
     public void setRedstoneEnabled(boolean redstoneEnabled) {
         this.redstoneEnabled = redstoneEnabled;
+    }
+
+    public boolean isEduEnabled() {
+        return eduEnabled;
     }
 
     //Revising later...
