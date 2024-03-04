@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Cool_Loong | Mcayear | KoshakMineDEV | WWMB | Draglis
@@ -35,8 +34,6 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
     private static final Object2ObjectOpenHashMap<String, FastConstructor<? extends Block>> CACHE_CONSTRUCTORS = new Object2ObjectOpenHashMap<>();
     private static final Object2ObjectOpenHashMap<String, BlockProperties> PROPERTIES = new Object2ObjectOpenHashMap<>();
     private static final Map<Plugin, List<CustomBlockDefinition>> CUSTOM_BLOCK_DEFINITIONS = new LinkedHashMap<>();
-
-    private static final ReentrantLock lock = new ReentrantLock();
 
     @Override
     public void init() {
@@ -1082,6 +1079,8 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
                 if (CACHE_CONSTRUCTORS.putIfAbsent(blockProperties.getIdentifier(), c) != null) {
                     throw new RegisterException("This block has already been registered with the identifier: " + blockProperties.getIdentifier());
                 } else {
+                    KEYSET.add(key);
+                    PROPERTIES.put(key, blockProperties);
                     blockProperties.getSpecialValueMap().values().forEach(Registries.BLOCKSTATE::registerInternal);
                 }
             } else {
