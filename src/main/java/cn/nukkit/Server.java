@@ -2535,6 +2535,11 @@ public class Server {
                     continue;
                 }
                 level = new Level(this, levelName, path, levelConfig.generators().size(), provider, generatorConfig);
+
+                //first generate, set a safe spawn point
+                Position safeSpawn = level.getSafeSpawn(level.getProvider().getSpawn());
+                level.getProvider().setSpawn(safeSpawn);
+
                 this.levels.put(level.getId(), level);
                 level.initLevel();
                 level.setTickRate(this.baseTickRate);
@@ -2547,11 +2552,9 @@ public class Server {
         }
         return true;
     }
-
     // endregion
 
     // region Ban, OP and whitelist - Ban，OP与白名单
-
     public BanList getNameBans() {
         return this.banByName;
     }
