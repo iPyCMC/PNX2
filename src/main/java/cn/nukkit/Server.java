@@ -34,6 +34,7 @@ import cn.nukkit.level.format.LevelConfig;
 import cn.nukkit.level.format.LevelProvider;
 import cn.nukkit.level.format.LevelProviderManager;
 import cn.nukkit.level.format.leveldb.LevelDBProvider;
+import cn.nukkit.level.generator.terra.PNXPlatform;
 import cn.nukkit.level.tickingarea.manager.SimpleTickingAreaManager;
 import cn.nukkit.level.tickingarea.manager.TickingAreaManager;
 import cn.nukkit.level.tickingarea.storage.JSONTickingAreaStorage;
@@ -727,6 +728,10 @@ public class Server {
             DispenseBehaviorRegister.init();
         }
 
+        if (useTerra) {//load terra
+            PNXPlatform instance = PNXPlatform.getInstance();
+        }
+
         freezableArrayManager = new FreezableArrayManager(
                 this.getConfig("memory-compression.enable", true),
                 this.getConfig("memory-compression.slots", 32),
@@ -917,8 +922,6 @@ public class Server {
         JSFeatures.initInternalFeatures();
         this.scoreboardManager.read();
         this.pluginManager.registerInterface(JSPluginLoader.class);
-        this.pluginManager.loadPlugins(this.pluginPath);
-        this.functionManager.reload();
 
         log.info("Reloading Registries...");
         {
@@ -940,6 +943,10 @@ public class Server {
             Registries.RECIPE.reload();
             Enchantment.reload();
         }
+
+        this.pluginManager.loadPlugins(this.pluginPath);
+        this.functionManager.reload();
+
         this.enablePlugins(PluginLoadOrder.STARTUP);
         {
             Registries.POTION.trim();
@@ -1969,7 +1976,12 @@ public class Server {
 
     public CompoundTag getOfflinePlayerData(String name, boolean create) {
         Optional<UUID> uuid = lookupName(name);
-        return getOfflinePlayerDataInternal(uuid.orElse(null), create);
+        if (uuid.isEmpty()) {
+            log.warn("Invalid uuid in name lookup database detected! Removing");
+            playerDataDB.delete(name.getBytes(StandardCharsets.UTF_8));
+            return null;
+        }
+        return getOfflinePlayerDataInternal(uuid.get(), create);
     }
 
     public boolean hasOfflinePlayerData(UUID uuid) {
@@ -2419,7 +2431,7 @@ public class Server {
         if (name.contains("/") || name.contains("\\")) {
             path = name;
         } else {
-            path = this.getDataPath() + "worlds/" + name + "/";
+            path = new File(this.getDataPath(), "worlds/" + name).getAbsolutePath();
         }
         Path jpath = Path.of(path);
         path = jpath.toString();
