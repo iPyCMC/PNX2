@@ -60,7 +60,7 @@ public class ResourcePackManager {
         this.resourcePacksById.clear();
         this.resourcePacks.clear();
 
-        if (Server.getInstance().isEduEnabled()) {
+        if (Server.getInstance().isEduEnabled() && !Server.getInstance().isWaterdogCapable()) {
             // Chemistry Resource Pack
             ResourcePack resourcePack = new ChemistryResourcePack();
             resourcePacks.add(resourcePack);
