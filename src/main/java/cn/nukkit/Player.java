@@ -346,6 +346,8 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     ///
     private final @NotNull PlayerInfo info;
 
+    protected int lastIceBomb = 10;
+
     public @NotNull PlayerInfo getPlayerInfo() {
         return this.info;
     }
@@ -5337,5 +5339,13 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
 
     public boolean getEnderChestOpen() {
         return this.enderChestOpen;
+    }
+
+    public int getLastIceBombThrowingTick() {
+        return lastIceBomb;
+    }
+
+    public void onThrowIceBomb() {
+        this.lastIceBomb = this.server.getTick();
     }
 }

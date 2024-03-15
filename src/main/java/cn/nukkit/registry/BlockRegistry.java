@@ -6,6 +6,7 @@ import cn.nukkit.block.customblock.CustomBlockDefinition;
 import cn.nukkit.item.ItemBlock;
 import cn.nukkit.level.Level;
 import cn.nukkit.plugin.Plugin;
+import cn.nukkit.Server;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.extern.slf4j.Slf4j;
 import me.sunlan.fastreflection.FastConstructor;
@@ -255,6 +256,9 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
 
     @Override
     public void init() {
+        Server srv = Server.getInstance();
+        boolean edu = srv.isEduEnabled();
+      //TODO: REMOVE FROM BLOCK LIST IF EDU IS ENABLED
         if (isLoad.getAndSet(true)) return;
         try {
             register(ACACIA_BUTTON, BlockAcaciaButton.class);
