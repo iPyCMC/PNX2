@@ -34,20 +34,14 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
     private static final Object2ObjectOpenHashMap<String, FastConstructor<? extends Block>> CACHE_CONSTRUCTORS = new Object2ObjectOpenHashMap<>();
     private static final Object2ObjectOpenHashMap<String, BlockProperties> PROPERTIES = new Object2ObjectOpenHashMap<>();
     private static final Map<Plugin, List<CustomBlockDefinition>> CUSTOM_BLOCK_DEFINITIONS = new LinkedHashMap<>();
+    private static final boolean isEdu = Server.getInstance().isEduEnabled();
 
-    public static final Set<String> skipBlockSet = Set.of(
+    public static final Set<String> eduBlocks = Set.of(
             "minecraft:camera",
             "minecraft:chemical_heat",
             "minecraft:chemistry_table",
-            "minecraft:chiseled_copper",
-            "minecraft:chiseled_tuff",
-            "minecraft:chiseled_tuff_bricks",
             "minecraft:colored_torch_bp",
             "minecraft:colored_torch_rg",
-            "minecraft:copper_bulb",
-            "minecraft:copper_grate",
-            "minecraft:copper_trapdoor",
-            "minecraft:crafter",
             "minecraft:element_0",
             "minecraft:element_1",
             "minecraft:element_10",
@@ -167,11 +161,6 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
             "minecraft:element_97",
             "minecraft:element_98",
             "minecraft:element_99",
-            "minecraft:exposed_chiseled_copper",
-            "minecraft:exposed_copper_bulb",
-            "minecraft:exposed_copper_door",
-            "minecraft:exposed_copper_grate",
-            "minecraft:exposed_copper_trapdoor",
             "minecraft:hard_black_stained_glass",
             "minecraft:hard_black_stained_glass_pane",
             "minecraft:hard_blue_stained_glass",
@@ -206,6 +195,22 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
             "minecraft:hard_white_stained_glass_pane",
             "minecraft:hard_yellow_stained_glass",
             "minecraft:hard_yellow_stained_glass_pane",
+            "minecraft:underwater_torch"
+    );
+
+    public static final Set<String> skipBlockSet = Set.of(
+            "minecraft:chiseled_copper",
+            "minecraft:chiseled_tuff",
+            "minecraft:chiseled_tuff_bricks",
+            "minecraft:copper_bulb",
+            "minecraft:copper_grate",
+            "minecraft:copper_trapdoor",
+            "minecraft:crafter",
+            "minecraft:exposed_chiseled_copper",
+            "minecraft:exposed_copper_bulb",
+            "minecraft:exposed_copper_door",
+            "minecraft:exposed_copper_grate",
+            "minecraft:exposed_copper_trapdoor",
             "minecraft:oxidized_chiseled_copper",
             "minecraft:oxidized_copper_bulb",
             "minecraft:oxidized_copper_door",
@@ -225,7 +230,6 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
             "minecraft:tuff_slab",
             "minecraft:tuff_stairs",
             "minecraft:tuff_wall",
-            "minecraft:underwater_torch",
             "minecraft:vault",
             "minecraft:waxed_chiseled_copper",
             "minecraft:waxed_copper_bulb",
@@ -256,9 +260,6 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
 
     @Override
     public void init() {
-        Server srv = Server.getInstance();
-        boolean edu = srv.isEduEnabled();
-      //TODO: REMOVE FROM BLOCK LIST IF EDU IS ENABLED
         if (isLoad.getAndSet(true)) return;
         try {
             register(ACACIA_BUTTON, BlockAcaciaButton.class);
@@ -1331,7 +1332,8 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
 
     @Override
     public void register(String key, Class<? extends Block> value) throws RegisterException {
-        if (skipBlockSet.contains(key)) return;//skip for experimental or educational blocks
+        if (skipBlockSet.contains(key)) return;//skip for experimental blocks
+        if(!isEdu && eduBlocks.contains(key)) return; //skip edu blocks
         if (Modifier.isAbstract(value.getModifiers())) {
             throw new RegisterException("you cant register a abstract block class!");
         }
