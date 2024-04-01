@@ -3,6 +3,7 @@ package cn.nukkit.inventory.fake;
 import cn.nukkit.Player;
 import cn.nukkit.math.Vector3;
 
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -41,6 +42,8 @@ public interface FakeBlock {
      */
     void remove(Player player);
 
+    HashSet<Vector3> getLastPositions();
+
     default List<Vector3> getPlacePositions(Player player) {
         return List.of(getOffset(player));
     }
@@ -50,9 +53,9 @@ public interface FakeBlock {
      */
     default Vector3 getOffset(Player player) {
         Vector3 offset = player.getDirectionVector();
-        offset.x *= -(2 + player.getWidth());
-        offset.y *= -(2 + player.getHeight());
-        offset.z *= -(2 + player.getWidth());
-        return player.getPosition().add(offset).floor();
+        offset.x *= -(1 + player.getWidth());
+        offset.y *= -(1 + player.getHeight());
+        offset.z *= -(1 + player.getWidth());
+        return player.getPosition().add(offset);
     }
 }

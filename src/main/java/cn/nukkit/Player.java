@@ -4,6 +4,7 @@ import cn.nukkit.AdventureSettings.Type;
 import cn.nukkit.api.DeprecationDetails;
 import cn.nukkit.api.UsedByReflection;
 import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockAir;
 import cn.nukkit.block.BlockBed;
 import cn.nukkit.block.BlockEndPortal;
 import cn.nukkit.block.BlockID;
@@ -168,6 +169,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class Player extends EntityHuman implements CommandSender, ChunkLoader, IPlayer, IScoreboardViewer {
+    /// static fields
     /**
      * 一个承载玩家的空数组静态常量
      * <p>
@@ -186,18 +188,16 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     public static final int PERMISSION_OPERATOR = 2;
     public static final int PERMISSION_MEMBER = 1;
     public static final int PERMISSION_VISITOR = 0;
-    public final HashSet<String> achievements = new HashSet<>();
+    /// static fields
+
     public boolean playedBefore;
     public boolean spawned = false;
     public boolean locallyInitialized = false;
     public boolean loggedIn = false;
+
+    public final HashSet<String> achievements = new HashSet<>();
     public int gamemode;
     public long lastBreak;
-    /**
-     * 每tick 当前位置与移动目标位置向量之差
-     * <p>
-     * The difference between the current position and the moving target position vector per tick
-     */
     public Vector3 speed = null;
     public long creationTime = 0;
     /**
@@ -275,7 +275,6 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     private static final float MOVEMENT_DISTANCE_THRESHOLD = 0.1f;
     private final Queue<Location> clientMovements = PlatformDependent.newMpscQueue(4);
     private final AtomicReference<Locale> locale = new AtomicReference<>(null);
-    private int unverifiedPackets;
     private int timeSinceRest;
     private String buttonText = "Button";
     private PermissibleBase perm = null;
@@ -343,7 +342,9 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     protected CreativeOutputInventory creativeOutputInventory;
     protected boolean inventoryOpen;//Player opens it own inventory
     protected boolean enderChestOpen;//Player open it own ender chest inventory
+    protected boolean fakeInventoryOpen;//Player open a fake Inventory
     ///
+
     private final @NotNull PlayerInfo info;
 
     protected int lastIceBomb = 10;
@@ -352,7 +353,6 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         return this.info;
     }
 
-    ///
     @UsedByReflection
     public Player(@NotNull BedrockSession session, @NotNull PlayerInfo info) {
         super(null, new CompoundTag());
@@ -440,10 +440,9 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
                 pk.data = 65535 / breakTick;
                 this.getLevel().addChunkPacket(this.breakingBlock.getFloorX() >> 4, this.breakingBlock.getFloorZ() >> 4, pk);
                 this.level.addParticle(new PunchBlockParticle(pos, block));
-                //miningTimeRequired * 1000-101这个算法最匹配原版计算速度，我们并不想任何方块破坏处理都由服务端执行，只处理自定义方块以绕过原版固定挖掘时间的限制
                 if (this.breakingBlock instanceof CustomBlock) {
                     var timeDiff = time - breakingBlockTime;
-                    blockBreakProgress += timeDiff / (miningTimeRequired * 1000 - 101);
+                    blockBreakProgress += timeDiff / (miningTimeRequired * 1000);
                     if (blockBreakProgress > 0.99) {
                         this.onBlockBreakAbort(pos, face);
                         this.onBlockBreakComplete(pos.asBlockVector3(), face);
@@ -865,7 +864,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         if (distance > 128) {
             invalidMotion = true;
         } else if (this.chunk == null || !chunk.getChunkState().canSend()) {
-            IChunk chunk = this.level.getChunk(clientPos.getChunkX() >> 4, clientPos.getChunkX() >> 4, false);
+            IChunk chunk = this.level.getChunk(clientPos.getChunkX(), clientPos.getChunkZ(), false);
             this.chunk = chunk;
             if (this.chunk == null || !chunk.getChunkState().canSend()) {
                 invalidMotion = true;
@@ -982,8 +981,8 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     }
 
     protected void offerMovementTask(Location newPosition) {
-        var distance = newPosition.distanceSquared(this);
-        var updatePosition = (float) Math.sqrt(distance) > MOVEMENT_DISTANCE_THRESHOLD;//sqrt distance
+        var distance = newPosition.distance(this);
+        var updatePosition = distance > MOVEMENT_DISTANCE_THRESHOLD;//sqrt distance
         var updateRotation = (float) Math.abs(this.getPitch() - newPosition.pitch) > ROTATION_UPDATE_THRESHOLD
                 || (float) Math.abs(this.getYaw() - newPosition.yaw) > ROTATION_UPDATE_THRESHOLD
                 || (float) Math.abs(this.getHeadYaw() - newPosition.headYaw) > ROTATION_UPDATE_THRESHOLD;
@@ -1259,6 +1258,10 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
      * 玩家客户端初始化完成后调用
      */
     protected void onPlayerLocallyInitialized() {
+        //init entity data property
+        this.setDataProperty(NAME, info.getUsername(), false);
+        this.setDataProperty(NAMETAG_ALWAYS_SHOW, 1, false);
+
         locallyInitialized = true;
         PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(this,
                 new TranslationContainer(TextFormat.YELLOW + "%multiplayer.player.joined", new String[]{
@@ -1278,11 +1281,32 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
           强制更新游戏模式以确保客户端会收到模式更新包
          */
         this.setGamemode(this.gamemode, false, null, true);
-        //init entity data property
-        this.setDataProperty(NAME, info.getUsername(), false);
-        this.setDataProperty(NAMETAG_ALWAYS_SHOW, 1, false);
         this.sendData(this.hasSpawned.values().toArray(Player.EMPTY_ARRAY), entityDataMap);
         this.spawnToAll();
+
+        Server.getInstance().getScheduler().scheduleTask(InternalPlugin.INSTANCE, () -> {
+            //TODO: Remove this is hacky When it is fixed by the client, Used to fix bug where block entities were not rendered normally
+            for (var b : this.level.getBlockEntities().values()) {
+                if (b instanceof BlockEntitySpawnable blockEntitySpawnable) {
+                    UpdateBlockPacket setAir = new UpdateBlockPacket();
+                    setAir.blockRuntimeId = BlockAir.STATE.blockStateHash();
+                    setAir.flags = UpdateBlockPacket.FLAG_NETWORK;
+                    setAir.x = b.getFloorX();
+                    setAir.y = b.getFloorY();
+                    setAir.z = b.getFloorZ();
+                    this.dataPacket(setAir);
+
+                    UpdateBlockPacket revertAir = new UpdateBlockPacket();
+                    revertAir.blockRuntimeId = b.getBlock().getRuntimeId();
+                    revertAir.flags = UpdateBlockPacket.FLAG_NETWORK;
+                    revertAir.x = b.getFloorX();
+                    revertAir.y = b.getFloorY();
+                    revertAir.z = b.getFloorZ();
+                    this.dataPacket(revertAir);
+                    blockEntitySpawnable.spawnTo(this);
+                }
+            }
+        }, true);
     }
 
     /**
@@ -2039,21 +2063,25 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     }
 
     /**
-     * 设置指定itemCategory物品的冷却显示效果，注意该方法仅为客户端显示效果，冷却逻辑实现仍需自己实现
-     * <p>
-     * Set the cooling display effect of the specified itemCategory items, note that this method is only for client-side display effect, cooling logic implementation still needs to be implemented by itself
+     * Sets the cooldown time for the specified item to use
      *
-     * @param coolDown the cool down
-     * @param itemId   the item id
+     * @param coolDownTick the cool down tick
+     * @param itemId       the item id
      */
-    public void setItemCoolDown(int coolDown, Identifier itemId) {
+    public void setItemCoolDown(int coolDownTick, Identifier itemId) {
         var pk = new PlayerStartItemCoolDownPacket();
-        pk.setCoolDownDuration(coolDown);
-        pk.setItemCategory(itemId.getPath());
-        this.cooldownTickMap.put(itemId.toString(), this.server.getTick() + coolDown);
+        pk.setCoolDownDuration(coolDownTick);
+        pk.setItemCategory(itemId.toString());
+        this.cooldownTickMap.put(itemId.toString(), this.server.getTick() + coolDownTick);
         this.dataPacket(pk);
     }
 
+    /**
+     * the cooldown of specified item is end
+     *
+     * @param itemId the item
+     * @return the boolean
+     */
     public boolean isItemCoolDownEnd(Identifier itemId) {
         Integer tick = this.cooldownTickMap.getOrDefault(itemId.toString(), 0);
         boolean result = this.getServer().getTick() - tick > 0;
@@ -2561,13 +2589,13 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
 
     public void sendFogStack() {
         var pk = new PlayerFogPacket();
-        pk.setFogStack(this.fogStack);
+        pk.fogStack = this.fogStack;
         this.dataPacket(pk);
     }
 
     public void sendCameraPresets() {
         var pk = new CameraPresetsPacket();
-        pk.getPresets().addAll(CameraPreset.getPresets().values());
+        pk.presets.addAll(CameraPreset.getPresets().values());
         dataPacket(pk);
     }
 
@@ -4188,13 +4216,6 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         }
     }
 
-    public void refreshChunkView() {
-        final int dis = this.getViewDistance();
-        this.setViewDistance(1);
-        this.setViewDistance(30);
-        this.setViewDistance(dis);
-    }
-
     @Override
     public boolean teleport(Location location, TeleportCause cause) {
         if (!this.isOnline()) {
@@ -4230,11 +4251,21 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         if (setPositionAndRotation(to, to.getYaw(), to.getPitch(), to.getHeadYaw())) {
             this.resetFallDistance();
             this.onGround = !this.noClip;
+
+            //if switch level or the distance teleported is too far
+            if (!from.level.equals(to.level)) {
+                this.playerChunkManager.handleTeleport();
+                //set nextChunkOrderRun is zero means that the next tick immediately execute the playerChunkManager#tick
+                this.nextChunkOrderRun = 0;
+            } else if ((Math.abs(from.getChunkX() - to.getChunkX()) >= this.getViewDistance())
+                    || (Math.abs(from.getChunkZ() - to.getChunkZ()) >= this.getViewDistance())) {
+                this.playerChunkManager.handleTeleport();
+                this.nextChunkOrderRun = 0;
+            }
+
             //send to client
             this.sendPosition(to, to.yaw, to.pitch, MovePlayerPacket.MODE_TELEPORT);
             this.newPosition = to;
-
-            this.nextChunkOrderRun = 0;
         } else {
             this.sendPosition(this, to.yaw, to.pitch, MovePlayerPacket.MODE_TELEPORT);
             this.newPosition = this;
@@ -4319,12 +4350,12 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         dialog.getBindEntity().setDataProperty(INTERACT_TEXT, dialog.getContent());
 
         NPCDialoguePacket packet = new NPCDialoguePacket();
-        packet.setRuntimeEntityId(dialog.getEntityId());
-        packet.setAction(NPCDialoguePacket.NPCDialogAction.OPEN);
-        packet.setDialogue(dialog.getContent());
-        packet.setNpcName(dialog.getTitle());
-        if (book) packet.setSceneName(dialog.getSceneName());
-        packet.setActionJson(dialog.getButtonJSONData());
+        packet.runtimeEntityId = dialog.getEntityId();
+        packet.action = NPCDialoguePacket.NPCDialogAction.OPEN;
+        packet.dialogue = dialog.getContent();
+        packet.npcName = dialog.getTitle();
+        if (book) packet.sceneName = dialog.getSceneName();
+        packet.actionJson = dialog.getButtonJSONData();
         if (book) this.dialogWindows.put(dialog.getSceneName(), dialog);
         this.dataPacket(packet);
     }
@@ -4440,7 +4471,8 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
      * @param inventory the inventory
      * @return the window id
      */
-    public int getWindowId(Inventory inventory) {
+    public int getWindowId(@NotNull Inventory inventory) {
+        Preconditions.checkNotNull(inventory);
         if (this.windows.containsKey(inventory)) {
             return this.windows.get(inventory);
         }
@@ -4459,7 +4491,8 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         return this.windowIndex.get(id);
     }
 
-    public int addWindow(Inventory inventory) {
+    public int addWindow(@NotNull Inventory inventory) {
+        Preconditions.checkNotNull(inventory);
         if (this.windows.containsKey(inventory)) {
             return this.windows.get(inventory);
         }
@@ -4479,7 +4512,8 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         }
     }
 
-    public int addWindow(Inventory inventory, Integer forceId) {
+    public int addWindow(@NotNull Inventory inventory, Integer forceId) {
+        Preconditions.checkNotNull(inventory);
         if (this.windows.containsKey(inventory)) {
             return this.windows.get(inventory);
         }
@@ -4523,6 +4557,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
      * @param inventory the inventory
      */
     public void removeWindow(Inventory inventory) {
+        Preconditions.checkNotNull(inventory);
         if (!this.permanentWindows.contains(windows.get(inventory))) {
             inventory.close(this);
             this.windows.remove(inventory);
@@ -4572,15 +4607,17 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
      */
     public void resetCraftingGridType() {
         if (spawned) {
-            //todo more drop
             List<Item> drops = new ArrayList<>(this.getCraftingGrid().getContents().values());//small craft
 
             drops.add(this.getCursorInventory().getItem(0));//cursor
 
             Optional<Inventory> topWindow = getTopWindow();
             Inventory value;
-            if (topWindow.isPresent() && (value = topWindow.get()) instanceof CraftTypeInventory) {
-                drops.addAll(value.getContents().values());
+            if (topWindow.isPresent()) {
+                if ((value = topWindow.get()) instanceof CraftTypeInventory) {
+                    drops.addAll(value.getContents().values());
+                }
+                removeWindow(value);
             }
             for (Item drop : drops) {
                 if (!drop.isNull()) {
@@ -5015,8 +5052,10 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
                         .add(new FloatTag((float) pitch)));
         double f = 1.1;
         EntityFishingHook fishingHook = new EntityFishingHook(chunk, nbt, this);
-        fishingHook.setMotion(new Vector3(-Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f, -Math.sin(Math.toRadians(pitch)) * f * f,
-                Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f));
+        fishingHook.setMotion(new Vector3(-Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f,
+                -Math.sin(Math.toRadians(pitch)) * f * f,
+                Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f)
+        );
         ProjectileLaunchEvent ev = new ProjectileLaunchEvent(fishingHook, this);
         this.getServer().getPluginManager().callEvent(ev);
         if (ev.isCancelled()) {
@@ -5309,8 +5348,8 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
                 if (blockEntitySign.getEditorEntityRuntimeId() == -1) {
                     blockEntitySign.setEditorEntityRuntimeId(this.getId());
                     OpenSignPacket openSignPacket = new OpenSignPacket();
-                    openSignPacket.setPosition(position.asBlockVector3());
-                    openSignPacket.setFrontSide(frontSide);
+                    openSignPacket.position = position.asBlockVector3();
+                    openSignPacket.frontSide = frontSide;
                     this.dataPacket(openSignPacket);
                     setOpenSignFront(frontSide);
                 }
@@ -5340,7 +5379,15 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     public boolean getEnderChestOpen() {
         return this.enderChestOpen;
     }
+  
+    public boolean getFakeInventoryOpen() {
+        return fakeInventoryOpen;
+    }
 
+    public void setFakeInventoryOpen(boolean fakeInventoryOpen) {
+        this.fakeInventoryOpen = fakeInventoryOpen;
+    }
+  
     public int getLastIceBombThrowingTick() {
         return lastIceBomb;
     }

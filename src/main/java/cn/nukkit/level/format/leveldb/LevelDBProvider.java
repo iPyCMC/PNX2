@@ -17,7 +17,6 @@ import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.IntTag;
-import cn.nukkit.network.protocol.LevelChunkPacket;
 import cn.nukkit.network.protocol.types.GameType;
 import cn.nukkit.utils.ChunkException;
 import cn.nukkit.utils.SemVersion;
@@ -44,7 +43,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -259,19 +257,17 @@ public class LevelDBProvider implements LevelProvider {
                     sections[i].writeToBuf(byteBuf);
                 }
                 // Write biomes
-                int last = total - 1;
-                for (int i = 0; i < last; i++) {
+                for (int i = 0; i < total; i++) {
                     sections[i].biomes().writeToNetwork(byteBuf, Integer::intValue);
                 }
 
                 byteBuf.writeByte(0); // edu- border blocks
 
                 // Block entities
-                final Collection<BlockEntity> tiles = unsafeChunk.getBlockEntities().values();
                 final List<CompoundTag> tagList = new ArrayList<>();
-                for (BlockEntity blockEntity : tiles) {
+                for (BlockEntity blockEntity : unsafeChunk.getBlockEntities().values()) {
                     if (blockEntity instanceof BlockEntitySpawnable blockEntitySpawnable) {
-//                        tagList.add(blockEntitySpawnable.getSpawnCompound());
+                        tagList.add(blockEntitySpawnable.getSpawnCompound());
                         //Adding NBT to a chunk pack does not show some block entities, and you have to send block entity packets to the player
                         level.addChunkPacket(blockEntitySpawnable.getChunkX(), blockEntitySpawnable.getChunkZ(), blockEntitySpawnable.getSpawnPacket());
                     }
@@ -287,13 +283,13 @@ public class LevelDBProvider implements LevelProvider {
                 byteBuf.release();
             }
         });
-        return Pair.of(data.get(),subChunkCountRef.get());
+        return Pair.of(data.get(), subChunkCountRef.get());
     }
 
 
     @Override
     public String getPath() {
-        return path.toString();
+        return path;
     }
 
     @Override
