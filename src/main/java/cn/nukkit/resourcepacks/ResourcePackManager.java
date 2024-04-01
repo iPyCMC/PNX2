@@ -59,6 +59,21 @@ public class ResourcePackManager {
     public void reloadPacks() {
         this.resourcePacksById.clear();
         this.resourcePacks.clear();
+
+        if (Server.getInstance().isEduEnabled() && !Server.getInstance().isWaterdogCapable()) {
+            // Chemistry Resource Pack
+            ResourcePack resourcePack = new ChemistryResourcePack();
+            resourcePacks.add(resourcePack);
+            this.resourcePacksById.put(resourcePack.getPackId(), resourcePack);
+
+            // Chemistry Behavior Pack
+            ResourcePack behaviorPack = new ChemistryBehaviorPack();
+            resourcePacks.add(behaviorPack);
+            this.resourcePacksById.put(behaviorPack.getPackId(), behaviorPack);
+
+            Server.getInstance().getLogger().info("LOADED CHEMISTRY PACKS");
+        }
+
         this.loaders.forEach(loader -> {
             var loadedPacks = loader.loadPacks();
             loadedPacks.forEach(pack -> resourcePacksById.put(pack.getPackId(), pack));

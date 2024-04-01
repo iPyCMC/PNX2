@@ -5,6 +5,7 @@ import cn.nukkit.item.customitem.CustomItem;
 import cn.nukkit.item.customitem.CustomItemDefinition;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.plugin.Plugin;
+import cn.nukkit.Server;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.sunlan.fastreflection.FastConstructor;
 import me.sunlan.fastreflection.FastMemberLoader;
