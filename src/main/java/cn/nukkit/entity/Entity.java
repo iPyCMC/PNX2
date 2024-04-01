@@ -342,7 +342,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
     public static void playAnimationOnEntities(AnimateEntityPacket.Animation animation, Collection<Entity> entities, Collection<Player> players) {
         var pk = new AnimateEntityPacket();
         pk.parseFromAnimation(animation);
-        entities.forEach(entity -> pk.getEntityRuntimeIds().add(entity.getId()));
+        entities.forEach(entity -> pk.entityRuntimeIds.add(entity.getId()));
         Server.broadcastPacket(players, pk);
     }
 
@@ -1193,7 +1193,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
     }
 
     public int getNetworkId() {
-        return Registries.ENTITY.getEntityNetworkId(getIdentifier().toString());
+        return Registries.ENTITY.getEntityNetworkId(getIdentifier());
     }
 
     public void heal(EntityRegainHealthEvent source) {
@@ -1369,11 +1369,10 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
 
     public boolean entityBaseTick(int tickDiff) {
         if (!this.isAlive()) {
-            this.deadTicks+=tickDiff;
-            if (this.deadTicks >= 15) {
-                //apply death smoke cloud only if it is a creature
-                if (this instanceof EntityCreature) {
-                    //通过碰撞箱大小动态添加 death smoke cloud
+            if (this instanceof EntityCreature) {
+                this.deadTicks += tickDiff;
+                if (this.deadTicks >= 15) {
+                    //apply death smoke cloud only if it is a creature
                     var aabb = this.getBoundingBox();
                     for (double x = aabb.getMinX(); x <= aabb.getMaxX(); x += 0.5) {
                         for (double z = aabb.getMinZ(); z <= aabb.getMaxZ(); z += 0.5) {
@@ -1382,13 +1381,18 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
                             }
                         }
                     }
+                    this.despawnFromAll();
+                    if (!this.isPlayer) {
+                        this.close();
+                    }
                 }
+                return this.deadTicks < 15;
+            } else {
                 this.despawnFromAll();
                 if (!this.isPlayer) {
                     this.close();
                 }
             }
-            return this.deadTicks < 10;
         }
         if (!this.isPlayer) {
             this.blocksAround = null;
@@ -2678,6 +2682,13 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
         return this.teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN);
     }
 
+    /**
+     * Teleport the entity to another location
+     *
+     * @param location the another location
+     * @param cause    the teleported cause
+     * @return the boolean
+     */
     public boolean teleport(Location location, PlayerTeleportEvent.TeleportCause cause) {
         double yaw = location.yaw;
         double pitch = location.pitch;
@@ -2713,12 +2724,17 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
         return false;
     }
 
-    //return runtime id (changed after restart the server)
+    /**
+     * return runtime id (changed after restart the server),the id is incremental number
+     */
     public long getId() {
         return this.id;
     }
 
 
+    /**
+     * Gets unique id(UUID)
+     */
     public UUID getUniqueId() {
         return this.entityUniqueId;
     }
@@ -3084,7 +3100,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
     public void playAnimation(AnimateEntityPacket.Animation animation, Collection<Player> players) {
         var pk = new AnimateEntityPacket();
         pk.parseFromAnimation(animation);
-        pk.getEntityRuntimeIds().add(this.getId());
+        pk.entityRuntimeIds.add(this.getId());
         Server.broadcastPacket(players, pk);
     }
 

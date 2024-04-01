@@ -532,7 +532,7 @@ public class Server {
         this.properties = new Config(this.dataPath + "server.properties", Config.PROPERTIES, new ConfigSection() {
             {
                 put("motd", "PowerNukkitX Server");
-                put("sub-motd", "https://powernukkitx.cn");
+                put("sub-motd", "v2.powernukkitx.com");
                 put("server-port", 19132);
                 put("server-ip", "0.0.0.0");
                 put("view-distance", 12);
@@ -555,7 +555,6 @@ public class Server {
                 put("allow-nether", false);
                 put("allow-the_end", false);
                 put("use-terra", false);
-                put("enable-experiment-mode", true);
                 put("enable-query", true);
                 put("enable-rcon", false);
                 put("rcon.password", Base64.getEncoder().encodeToString(UUID.randomUUID().toString().replace("-", "").getBytes()).substring(3, 13));
@@ -912,11 +911,12 @@ public class Server {
         }
 
         this.pluginManager.registerInterface(JavaPluginLoader.class);
-        JSIInitiator.reset();
-        JSFeatures.clearFeatures();
-        JSFeatures.initInternalFeatures();
+        //todo enable js plugin when adapt
+//        JSIInitiator.reset();
+//        JSFeatures.clearFeatures();
+//        JSFeatures.initInternalFeatures();
+//        this.pluginManager.registerInterface(JSPluginLoader.class);
         this.scoreboardManager.read();
-        this.pluginManager.registerInterface(JSPluginLoader.class);
 
         log.info("Reloading Registries...");
         {
@@ -2438,23 +2438,31 @@ public class Server {
             log.warn(this.getLanguage().tr("nukkit.level.notFound", name));
             return false;
         }
-        //verify the provider
-        Class<? extends LevelProvider> provider = LevelProviderManager.getProvider(path);
-        if (provider == null) {
-            log.error(this.getLanguage().tr("nukkit.level.loadError", name, "Unknown provider"));
-            return false;
-        }
 
         File config = jpath.resolve("config.json").toFile();
         LevelConfig levelConfig;
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        Class<? extends LevelProvider> provider = null;
         if (config.exists()) {
             try {
                 levelConfig = gson.fromJson(new FileReader(config), LevelConfig.class);
+                provider = LevelProviderManager.getProviderByName(levelConfig.format());
+                if (provider == null) {
+                    log.error(this.getLanguage().tr("nukkit.level.loadError", name, "Unknown provider"));
+                    return false;
+                }
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
         } else {
+            //verify the provider
+            provider = LevelProviderManager.getProvider(path);
+            if (provider == null) {
+                log.error(this.getLanguage().tr("nukkit.level.loadError", name, "Unknown provider"));
+                return false;
+            }
+
             Map<Integer, LevelConfig.GeneratorConfig> map = new HashMap<>();
             //todo nether the_end overworld
             map.put(0, new LevelConfig.GeneratorConfig("flat", System.currentTimeMillis(), DimensionEnum.OVERWORLD.getDimensionData(), Collections.emptyMap()));
@@ -2466,11 +2474,7 @@ public class Server {
                 throw new RuntimeException(e);
             }
         }
-        Class<? extends LevelProvider> providerByName = LevelProviderManager.getProviderByName(levelConfig.format());
-        if (provider != providerByName) {
-            log.error(this.getLanguage().tr("nukkit.level.loadError", name, "Unknown provider"));
-            return false;
-        }
+
         Map<Integer, LevelConfig.GeneratorConfig> generators = levelConfig.generators();
         for (var entry : generators.entrySet()) {
             String levelName = name + " Dim" + entry.getKey();

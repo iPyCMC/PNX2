@@ -30,17 +30,12 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public abstract class EntityProjectile extends Entity {
     public static final int PICKUP_NONE = 0;
-
     public static final int PICKUP_ANY = 1;
-
     public static final int PICKUP_CREATIVE = 2;
 
     public Entity shootingEntity;
     public boolean hadCollision;
     public boolean closeOnCollide;
-    @Deprecated
-    @DeprecationDetails(since = "FUTURE", by = "PowerNukkit", reason = "Redundant and unused", replaceWith = "getDamage()")
-    protected double damage;
     /**
      * It's inverted from {@link #getHasAge()} because of the poor architecture chosen by the original devs
      * on the entity construction and initialization. It's impossible to set it to true before
@@ -56,7 +51,7 @@ public abstract class EntityProjectile extends Entity {
         super(chunk, nbt);
         this.shootingEntity = shootingEntity;
         if (shootingEntity != null) {
-            this.setDataProperty(TARGET_EID, shootingEntity.getId());
+            this.setDataProperty(OWNER_EID, shootingEntity.getId());
         }
     }
 

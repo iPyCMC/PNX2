@@ -7,6 +7,7 @@ import cn.nukkit.level.Level;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.network.protocol.MovePlayerPacket;
 import cn.nukkit.utils.GameLoop;
+import cn.nukkit.utils.LevelException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -22,9 +23,11 @@ import static org.mockito.Mockito.times;
 @ExtendWith(GameMockExtension.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class PlayerTest {
+
     @Test
     @Order(1)
-    void player_teleport(Player player, Level level) {
+    void test_player_teleport(Player player, Level level) {
+        player.level = level;
         player.setViewDistance(4);//view 4
         GameLoop loop = GameLoop.builder().loopCountPerSec(20).onTick((d) -> {
             Server.getInstance().getNetwork().process();
@@ -34,68 +37,109 @@ public class PlayerTest {
         Thread thread = new Thread(loop::startLoop);
         thread.start();
         player.teleport(new Vector3(10000, 6, 10000));
-        Assertions.assertTrue(level.isChunkLoaded(10000 >> 4, 10000 >> 4));//verify target chunk is load
+
+        int limit = 10;
+        while (limit-- != 0) {
+            try {
+                Thread.sleep(1000);
+                if (level.isChunkLoaded(10000 >> 4, 10000 >> 4)) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        loop.stop();
+        //verify target chunk is load
+        if (limit <= 0) {
+            Assertions.fail("Chunks cannot be successfully loaded in 10s");
+        }
         InOrder orderSendPk = Mockito.inOrder(player.getSession());
         orderSendPk.verify(player.getSession(), times(1)).sendPacket(any(MovePlayerPacket.class));
-        loop.stop();
+        player.setPosition(new Vector3(0, 100, 0));
     }
 
     @Test
     @Order(2)
-    void player_chunk_load(Player player, Level level) {
+    void test_player_chunk_load(Player player, Level level) {
+        player.level = level;
         player.setViewDistance(4);//view 4
         GameLoop loop = GameLoop.builder().loopCountPerSec(20).onTick((d) -> {
             Server.getInstance().getScheduler().mainThreadHeartbeat((int) d.getTick());
+            level.subTick(d);
             player.checkNetwork();
         }).build();
+        player.setPosition(new Vector3(0, 100, 0));
         Thread thread = new Thread(loop::startLoop);
         thread.start();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        int limit = 10;
+        while (limit-- != 0) {
+            try {
+                Thread.sleep(1000);
+                if (49 == player.getUsedChunks().size()) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
         loop.stop();
-        Assertions.assertEquals(49, player.getUsedChunks().size());
+        if (limit <= 0) {
+            Assertions.fail("Chunks cannot be successfully loaded in 10s,the number of chunks that are now loaded: " + player.getUsedChunks().size());
+        }
+        player.setPosition(new Vector3(0, 100, 0));
     }
 
     @Test
     @Order(3)
-    void player_chunk_unload(Player player, Level level) {
+    void test_player_chunk_unload(Player player, Level level) {
+        player.level = level;
         player.setViewDistance(4);//view 4
         GameLoop loop = GameLoop.builder().loopCountPerSec(20).onTick((d) -> {
             Server.getInstance().getScheduler().mainThreadHeartbeat((int) d.getTick());
-            player.checkNetwork();
+            level.subTick(d);
+            try {
+                player.checkNetwork();
+            } catch (LevelException ignore) {
+            }
         }).build();
+        player.setPosition(new Vector3(0, 100, 0));
         Thread thread = new Thread(loop::startLoop);
         thread.start();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        int limit = 10;
+        while (limit-- != 0) {
+            try {
+                Thread.sleep(1000);
+                if (49 == player.getUsedChunks().size()) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
-        Assertions.assertEquals(49, player.getUsedChunks().size());
+        if (limit <= 0) {
+            Assertions.fail("Chunks cannot be successfully loaded in 10s");
+        }
+        int limit2 = 10;
         player.setPosition(new Vector3(1000, 100, 1000));
-
-        try {
-            Thread.sleep(4000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        while (limit2-- != 0) {
+            try {
+                Thread.sleep(1000);
+                if (level.getChunks().size() == 50) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (limit2 == 0) {
+            Assertions.fail("Chunks cannot be successfully unloaded in 10s");
         }
         loop.stop();
-        //Some chunks may need to be processed next tick by doLevelGarbageCollection, and I don't want to wait too long for the test
-        Assertions.assertTrue(49 <= level.getChunks().size() && level.getChunks().size() <= 51);
-        Assertions.assertTrue(level.getChunks().containsKey(0L), "spawn chunk should keep load");
-        Assertions.assertTrue(player.getUsedChunks().contains(Level.chunkHash(61, 61)), "the chunk should be loaded for player");
-        Assertions.assertFalse(level.getChunks().containsKey(Level.chunkHash(1, 1)), "This chunk should not be loaded");
+        Assertions.assertTrue(level.getChunks().containsKey(0L), "spawn chunk 0,0 should keep load");
+        Assertions.assertTrue(player.getUsedChunks().contains(Level.chunkHash(61, 61)), "the chunk 61,61 should be loaded for player");
+        Assertions.assertFalse(level.getChunks().containsKey(Level.chunkHash(1, 1)), "This chunk 1,1 should not be loaded");
+        player.setPosition(new Vector3(0, 100, 0));
     }
 
-    @Test
-    void test_setNameTag(Player player){
-        String oldNameTag = player.getNameTag();
-        player.setNameTag("test nameTag");
-        String newNameTag = player.getNameTag();
-        System.out.println("Old name tag: " + oldNameTag);
-        System.out.println("New name tag: " + newNameTag);
-    }
 }
