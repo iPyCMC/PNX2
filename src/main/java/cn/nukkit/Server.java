@@ -277,7 +277,7 @@ public class Server {
     private QueryRegenerateEvent queryRegenerateEvent;
     private Config properties;
     private Config config;
-    private final Map<InetSocketAddress, Player> players = new ConcurrentHashMap<>();
+    public final Map<InetSocketAddress, Player> players = new ConcurrentHashMap<>();
 
     private final Map<UUID, Player> playerList = new ConcurrentHashMap<>();
 
