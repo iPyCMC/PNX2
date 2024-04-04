@@ -49,16 +49,16 @@ public abstract class Item implements Cloneable, ItemID {
     public static final Item[] EMPTY_ARRAY = new Item[0];
 
     public static String UNKNOWN_STR = "Unknown";
-    protected Block block = null;
     protected String id;
     protected Identifier identifier;
+    protected String name;
     protected int meta;
+    public int count;
+    protected Integer netId;
+    protected Block block = null;
     protected boolean hasMeta = true;
     private byte[] tags = EmptyArrays.EMPTY_BYTES;
     private CompoundTag cachedNBT;
-    public int count;
-    protected String name;
-    protected Integer netId;
     private static int STACK_NETWORK_ID_COUNTER = 1;
 
     private String idConvertToName() {
@@ -1257,12 +1257,11 @@ public abstract class Item implements Cloneable, ItemID {
 
     public final boolean equals(Item item, boolean checkDamage, boolean checkCompound) {
         if (!Objects.equals(this.getId(), item.getId())) return false;
-        if (checkDamage && this.hasMeta() && item.hasMeta()) {
-            if (this.getDamage() != item.getDamage()) {
-                if (this.isBlock() && item.isBlock()) {
-                    if (this.getBlockUnsafe().getBlockState() != item.getBlockUnsafe().getBlockState()) return false;
-                } else return false;
-            }
+        if (checkDamage && this.hasMeta() && item.hasMeta() && this.getDamage() != item.getDamage()) {
+            return false;
+        }
+        if (checkDamage && (this.isBlock() || item.isBlock()) && this.getBlockUnsafe().getBlockState() != item.getBlockUnsafe().getBlockState()) {
+            return false;
         }
         if (checkCompound && (this.hasCompoundTag() || item.hasCompoundTag())) {
             return Objects.equals(this.getNamedTag(), item.getNamedTag());

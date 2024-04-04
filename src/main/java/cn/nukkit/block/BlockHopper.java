@@ -2,7 +2,6 @@ package cn.nukkit.block;
 
 import cn.nukkit.Player;
 import cn.nukkit.Server;
-import cn.nukkit.api.*;
 import cn.nukkit.block.property.CommonBlockProperties;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.blockentity.BlockEntityHopper;
@@ -12,7 +11,6 @@ import cn.nukkit.event.inventory.InventoryMoveItemEvent;
 import cn.nukkit.inventory.ContainerInventory;
 import cn.nukkit.inventory.Inventory;
 import cn.nukkit.inventory.InventoryHolder;
-import cn.nukkit.recipe.RecipeInventoryHolder;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemHopper;
 import cn.nukkit.item.ItemTool;
@@ -23,6 +21,7 @@ import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.ListTag;
+import cn.nukkit.recipe.RecipeInventoryHolder;
 import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.RedstoneComponent;
 import org.jetbrains.annotations.NotNull;
@@ -110,6 +109,10 @@ public class BlockHopper extends BlockTransparent implements RedstoneComponent, 
         if (player == null) {
             return false;
         }
+        Item itemInHand = player.getInventory().getItemInHand();
+        if (player.isSneaking() && !(itemInHand.isTool() || itemInHand.isNull())) {
+            return false;
+        }
 
         BlockEntityHopper blockEntity = getOrCreateBlockEntity();
 
@@ -135,12 +138,6 @@ public class BlockHopper extends BlockTransparent implements RedstoneComponent, 
         }
 
         return super.getComparatorInputOverride();
-    }
-
-    @Deprecated
-    @DeprecationDetails(since = "1.4.0.0-PN", replaceWith = "getBlockFace()", reason = "Duplicated")
-    public BlockFace getFacing() {
-        return getBlockFace();
     }
 
     public boolean isEnabled() {
