@@ -195,11 +195,6 @@ public class Position extends NamedPosition {
     }
 
     @Override
-    public Position subtract() {
-        return this.subtract(0, 0, 0);
-    }
-
-    @Override
     public Position subtract(double x) {
         return this.subtract(x, 0, 0);
     }
@@ -254,7 +249,7 @@ public class Position extends NamedPosition {
         return (Position) super.clone();
     }
 
-    public @Nullable IChunk getChunk() {
+    public IChunk getChunk() {
         return isValid() ? level.getChunk(getChunkX(), getChunkZ()) : null;
     }
 }
