@@ -287,24 +287,6 @@ public class Chunk implements IChunk {
     }
 
     @Override
-    public int getHighestBlockAt(int x, int z, boolean cache) {
-        if (cache) {
-            return this.getHeightMap(x, z);
-        } else {
-            for (int y = getDimensionData().getMaxHeight(); y >= getDimensionData().getMinHeight(); --y) {
-                if (getBlockState(x, y, z) != BlockAir.PROPERTIES.getBlockState()) {
-                    this.setHeightMap(x, z, y);
-                    return y;
-                }
-            }
-            return getDimensionData().getMinHeight();
-        }
-    }
-
-    //基岩版3d-data保存heightMap是以0为索引保存的，所以这里需要减去世界最小值，详情查看
-    //Bedrock Edition 3d-data saves the height map start from index of 0, so need to subtract the world minimum height here, see for details:
-    //https://github.com/bedrock-dev/bedrock-level/blob/main/src/include/data_3d.h#L115
-    @Override
     public int getHeightMap(int x, int z) {
         long stamp = heightAndBiomeLock.tryOptimisticRead();
         try {
@@ -334,13 +316,7 @@ public class Chunk implements IChunk {
 
     @Override
     public void recalculateHeightMap() {
-        batchProcess(unsafeChunk -> {
-            for (int z = 0; z < 16; ++z) {
-                for (int x = 0; x < 16; ++x) {
-                    unsafeChunk.recalculateHeightMapColumn(x, z);
-                }
-            }
-        });
+        batchProcess(UnsafeChunk::recalculateHeightMap);
     }
 
     @Override
@@ -349,17 +325,17 @@ public class Chunk implements IChunk {
         long stamp2 = blockLock.writeLock();
         try {
             UnsafeChunk unsafeChunk = new UnsafeChunk(this);
-            int max = unsafeChunk.getHighestBlockAt(x, z, false);
+            int max = unsafeChunk.getHighestBlockAt(x, z);
             int y;
-            for (y = max; y >= 0; --y) {
+            for (y = max; y >= getDimensionData().getMinHeight(); --y) {
                 BlockState blockState = unsafeChunk.getBlockState(x, y, z);
                 Block block = Block.get(blockState);
                 if (block.getLightFilter() > 1 || block.diffusesSkyLight()) {
                     break;
                 }
             }
-            unsafeChunk.setHeightMap(x, z, y + 1);
-            return y + 1;
+            unsafeChunk.setHeightMap(x, z, y);
+            return y;
         } finally {
             heightAndBiomeLock.unlockWrite(stamp1);
             blockLock.unlockWrite(stamp2);
@@ -372,7 +348,7 @@ public class Chunk implements IChunk {
             // basic light calculation
             for (int z = 0; z < 16; ++z) {
                 for (int x = 0; x < 16; ++x) { // iterating over all columns in chunk
-                    int top = unsafe.getHeightMap(x, z) - 1; // top-most block
+                    int top = unsafe.getHeightMap(x, z); // top-most block
 
                     int y;
                     for (y = getDimensionData().getMaxHeight(); y > top; --y) {
@@ -703,7 +679,7 @@ public class Chunk implements IChunk {
         int offsetZ = getZ() << 4;
         return IntStream.rangeClosed(0, getDimensionData().getChunkSectionCount() - 1)
                 .mapToObj(sectionY -> sections[sectionY])
-                .filter(section -> !section.isEmpty()).parallel()
+                .filter(section -> section != null && !section.isEmpty()).parallel()
                 .map(section -> section.scanBlocks(getProvider(), offsetX, offsetZ, min, max, condition))
                 .flatMap(Collection::stream);
     }
@@ -751,11 +727,21 @@ public class Chunk implements IChunk {
         }
     }
 
+    @Override
+    public void reObfuscateChunk() {
+        for (var section : getSections()) {
+            if(section!=null){
+                section.setNeedReObfuscate();
+            }
+        }
+    }
+
     private int ensureY(final int y) {
         final int minHeight = getDimensionData().getMinHeight();
         final int maxHeight = getDimensionData().getMaxHeight();
         return Math.max(Math.min(y, maxHeight), minHeight);
     }
+
 
     public static Builder builder() {
         return new Builder();

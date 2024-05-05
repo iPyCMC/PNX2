@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static cn.nukkit.block.property.CommonBlockProperties.*;
+import static cn.nukkit.block.property.CommonBlockProperties.PERSISTENT_BIT;
+import static cn.nukkit.block.property.CommonBlockProperties.UPDATE_BIT;
 
 public class BlockMangroveLeaves extends BlockLeaves {
 

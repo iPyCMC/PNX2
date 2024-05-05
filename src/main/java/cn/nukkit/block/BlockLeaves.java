@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static cn.nukkit.block.property.CommonBlockProperties.OLD_LEAF_TYPE;
 import static cn.nukkit.block.property.CommonBlockProperties.PERSISTENT_BIT;
 import static cn.nukkit.block.property.CommonBlockProperties.UPDATE_BIT;
 
@@ -121,7 +120,7 @@ public abstract class BlockLeaves extends BlockTransparent {
             drops.add(Item.get(ItemID.STICK));
         }
         if (random.nextInt(saplingOdds) == 0) {
-            drops.add(getSapling());
+            drops.add(toSapling());
         }
 
         return drops.toArray(Item.EMPTY_ARRAY);
@@ -212,10 +211,6 @@ public abstract class BlockLeaves extends BlockTransparent {
         return getType() == WoodType.OAK;
     }
 
-    protected Item getSapling() {
-        return Item.get(BlockID.SAPLING, getPropertyValue(OLD_LEAF_TYPE).ordinal());
-    }
-
     @Override
     public boolean diffusesSkyLight() {
         return true;
@@ -229,5 +224,9 @@ public abstract class BlockLeaves extends BlockTransparent {
     @Override
     public boolean sticksToPiston() {
         return false;
+    }
+
+    public Item toSapling() {
+        return Item.AIR;
     }
 }

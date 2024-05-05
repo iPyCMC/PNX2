@@ -8,11 +8,14 @@
     <img alt="Action" src="https://github.com/PowerNukkitX/PowerNukkitX/actions/workflows/maven.yml/badge.svg?branch=master" />
   </a>
   <img alt="Coverage" src=".github/badges/jacoco.svg" />
-  <a href="https://dev.pnx-wiki.pages.dev/" target="_blank">
+  <a href="https://pnx-wiki.pages.dev" target="_blank">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
   </a>
   <a href="https://www.gnu.org/licenses/lgpl-3.0.html" target="_blank">
     <img alt="License: LGPL--3" src="https://img.shields.io/badge/License-LGPL--3-yellow.svg" />
+  </a>
+  <a href="https://discord.com/invite/XXus4FB6qf">
+    <img src="https://img.shields.io/discord/944227466912870410?label=discord&color=7289DA&logo=discord" alt="Discord" />
   </a>
 </p>
 
@@ -26,12 +29,12 @@
 ### 🏠 [Homepage](https://v2.powernukkitx.com/)
 
 ## Install
-1. Make sure you have `JDK17` installed and environment variables set, if not [download from](https://www.graalvm.org/downloads)
+1. Make sure you have `JDK21` installed and environment variables set, if not [download from](https://www.graalvm.org/downloads)
 2. [Select the version you want to use](https://github.com/PowerNukkitX/PowerNukkitX/actions?query=branch%3Amaster+is%3Asuccess)
 3. Make sure you have a github account, login it, if not [sign up](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)!
 4. Click to the version you want to use and scroll down to find artifacts.
 5. Download the `PowerNukkitX-Run.zip`  
-![img.png](.github/img/003.png)
+[![img.png](.github/img/003.png)](https://github.com/PowerNukkitX/PowerNukkitX/actions?query=branch%3Amaster+is%3Asuccess)
 6. Unzip `PowerNukkitX-Run.zip` to the directory you want.
 
 ## Usage

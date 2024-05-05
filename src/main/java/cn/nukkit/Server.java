@@ -84,7 +84,6 @@ import cn.nukkit.tags.BiomeTags;
 import cn.nukkit.tags.BlockTags;
 import cn.nukkit.tags.ItemTags;
 import cn.nukkit.utils.*;
-import cn.nukkit.utils.bugreport.ExceptionHandler;
 import cn.nukkit.utils.collection.FreezableArrayManager;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -104,7 +103,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -304,8 +302,6 @@ public class Server {
     };
     private Level[] levelArray;
     private final ServiceManager serviceManager = new NKServiceManager();
-    private Level defaultLevel = null;
-    private boolean allowNether;
     private final Thread currentThread;
     private final long launchTime;
     private Watchdog watchdog;
@@ -314,10 +310,17 @@ public class Server {
     private boolean safeSpawn;
     private boolean forceSkinTrusted = false;
     private boolean checkMovement = true;
-    private boolean allowTheEnd;
     private boolean useTerra;
     private FreezableArrayManager freezableArrayManager;
     public boolean enabledNetworkEncryption;
+
+    ///default levels
+    private Level defaultLevel = null;
+    private Level defaultNether = null;
+    private Level defaultEnd = null;
+    private boolean allowNether;
+    private boolean allowTheEnd;
+    ///
 
     Server(final String filePath, String dataPath, String pluginPath, String predefinedLanguage) {
         Preconditions.checkState(instance == null, "Already initialized!");
@@ -569,9 +572,7 @@ public class Server {
                 put("edu-enabled", false);
             }
         });
-        // Allow Nether? (determines if we create a nether world if one doesn't exist on startup)
         this.allowNether = this.properties.getBoolean("allow-nether", true);
-
         this.allowTheEnd = this.properties.getBoolean("allow-the_end", true);
 
         this.useTerra = this.properties.getBoolean("use-terra", false);
@@ -633,7 +634,7 @@ public class Server {
         this.safeSpawn = this.getConfig().getBoolean("settings.safe-spawn", true);
         this.forceSkinTrusted = this.getConfig().getBoolean("player.force-skin-trusted", false);
         this.checkMovement = this.getConfig().getBoolean("player.check-movement", true);
-        this.serverAuthoritativeMovementMode = switch (this.properties.get("server-authoritative-movement", "client-auth")) {
+        this.serverAuthoritativeMovementMode = switch (this.properties.get("server-authoritative-movement", "server-auth")) {
             case "client-auth" -> 0;
             case "server-auth" -> 1;
             case "server-auth-with-rewind" -> 2;
@@ -671,17 +672,6 @@ public class Server {
 
         if (this.getPropertyBoolean("hardcore", false) && this.getDifficulty() < 3) {
             this.setPropertyInt("difficulty", 3);
-        }
-
-        boolean bugReport;
-        if (this.getConfig().exists("settings.bug-report")) {
-            bugReport = this.getConfig().getBoolean("settings.bug-report");
-            this.getProperties().remove("bug-report");
-        } else {
-            bugReport = this.getPropertyBoolean("bug-report", true); //backwards compat
-        }
-        if (bugReport) {
-            ExceptionHandler.registerExceptionHandler();
         }
 
         log.info(this.getLanguage().tr("nukkit.server.networkStart", new String[]{this.getIp().equals("") ? "*" : this.getIp(), String.valueOf(this.getPort())}));
@@ -817,7 +807,7 @@ public class Server {
 
         this.enablePlugins(PluginLoadOrder.POSTWORLD);
 
-        EntityProperty.buildPacket();
+        EntityProperty.buildPacketData();
         EntityProperty.buildPlayerProperty();
 
         if (this.getConfig("settings.download-spark", false)) {
@@ -837,6 +827,11 @@ public class Server {
         if (!file.isDirectory()) throw new RuntimeException("worlds isn't directory");
         //load all world from `worlds` folder
         for (var f : Objects.requireNonNull(file.listFiles(File::isDirectory))) {
+            LevelConfig levelConfig = getLevelConfig(f.getName());
+            if (levelConfig != null && !levelConfig.enable()) {
+                continue;
+            }
+
             if (!this.loadLevel(f.getName())) {
                 this.generateLevel(f.getName(), null);
             }
@@ -863,8 +858,8 @@ public class Server {
                     seed = seedString.hashCode();
                 }
                 //todo nether the_end overworld
-                generatorConfig.put(0, new LevelConfig.GeneratorConfig("flat", seed, DimensionEnum.OVERWORLD.getDimensionData(), Collections.emptyMap()));
-                LevelConfig levelConfig = new LevelConfig(this.getConfig().get("level-settings.default-format", "leveldb"), generatorConfig);
+                generatorConfig.put(0, new LevelConfig.GeneratorConfig("flat", seed, false, LevelConfig.AntiXrayMode.LOW, true, DimensionEnum.OVERWORLD.getDimensionData(), Collections.emptyMap()));
+                LevelConfig levelConfig = new LevelConfig(this.getConfig().get("level-settings.default-format", "leveldb"), true, generatorConfig);
                 this.generateLevel(levelFolder, levelConfig);
             }
             this.setDefaultLevel(this.getLevelByName(levelFolder + " Dim0"));
@@ -1724,7 +1719,8 @@ public class Server {
             pk.entries = new PlayerListPacket.Entry[]{new PlayerListPacket.Entry(player.getUniqueId())};
 
             Server.broadcastPacket(this.playerList.values(), pk);
-            this.getNetwork().getPong().playerCount(playerList.size()).update();;
+            this.getNetwork().getPong().playerCount(playerList.size()).update();
+            ;
         }
     }
 
@@ -2315,18 +2311,14 @@ public class Server {
     }
 
     /**
-     * @return 获得默认游戏世界<br>Get the default world
+     * @return Get the default overworld
      */
     public Level getDefaultLevel() {
         return defaultLevel;
     }
 
     /**
-     * 设置默认游戏世界
-     * <p>
-     * Set default game world
-     *
-     * @param defaultLevel 默认游戏世界<br>default game world
+     * Set default overworld
      */
     public void setDefaultLevel(Level defaultLevel) {
         if (defaultLevel == null || (this.isLevelLoaded(defaultLevel.getName()) && defaultLevel != this.defaultLevel)) {
@@ -2335,11 +2327,45 @@ public class Server {
     }
 
     /**
+     * @return Get the default nether
+     */
+    public Level getDefaultNetherLevel() {
+        return defaultNether;
+    }
+
+    /**
+     * Set default nether
+     */
+    public void setDefaultNetherLevel(Level defaultLevel) {
+        if (defaultLevel == null || (this.isLevelLoaded(defaultLevel.getName()) && defaultLevel != this.defaultNether)) {
+            this.defaultNether = defaultLevel;
+        }
+    }
+
+    /**
+     * @return Get the default the_end level
+     */
+    public Level getDefaultEndLevel() {
+        return defaultLevel;
+    }
+
+    /**
+     * Set default the_end level
+     */
+    public void setDefaultEndLevel(Level defaultLevel) {
+        if (defaultLevel == null || (this.isLevelLoaded(defaultLevel.getName()) && defaultLevel != this.defaultEnd)) {
+            this.defaultEnd = defaultLevel;
+        }
+    }
+
+    public static final String levelDimPattern = "^.*Dim[0-9]$";
+
+    /**
      * @param name 世界名字
      * @return 世界是否已经加载<br>Is the world already loaded
      */
     public boolean isLevelLoaded(String name) {
-        if (!name.matches("^.*Dim[0-9]$")) {
+        if (!name.matches(levelDimPattern)) {
             for (int i = 0; i < 3; i++) {
                 if (this.getLevelByName(name + " Dim" + i) != null) {
                     return true;
@@ -2375,7 +2401,7 @@ public class Server {
      * @return level实例<br>level instance
      */
     public Level getLevelByName(String name) {
-        if (!name.matches("^.*Dim[0-9]$")) {
+        if (!name.matches(levelDimPattern)) {
             name = name + " Dim0";
         }
         for (Level level : this.levelArray) {
@@ -2408,46 +2434,46 @@ public class Server {
 
     }
 
-    public boolean loadLevel(String name) {
-        if (Objects.equals(name.trim(), "")) {
+    @Nullable
+    public LevelConfig getLevelConfig(String levelFolderName) {
+        if (Objects.equals(levelFolderName.trim(), "")) {
             throw new LevelException("Invalid empty level name");
         }
         String path;
-        if (name.contains("/") || name.contains("\\")) {
-            path = name;
+        if (levelFolderName.contains("/") || levelFolderName.contains("\\")) {
+            path = levelFolderName;
         } else {
-            path = new File(this.getDataPath(), "worlds/" + name).getAbsolutePath();
+            path = new File(this.getDataPath(), "worlds/" + levelFolderName).getAbsolutePath();
         }
         Path jpath = Path.of(path);
         path = jpath.toString();
         if (!jpath.toFile().exists()) {
-            log.warn(this.getLanguage().tr("nukkit.level.notFound", name));
-            return false;
+            log.warn(this.getLanguage().tr("nukkit.level.notFound", levelFolderName));
+            return null;
         }
 
         File config = jpath.resolve("config.json").toFile();
         LevelConfig levelConfig;
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-        Class<? extends LevelProvider> provider = null;
         if (config.exists()) {
             try {
                 levelConfig = gson.fromJson(new FileReader(config), LevelConfig.class);
-                provider = LevelProviderManager.getProvider(path);
-            } catch (FileNotFoundException e) {
+                Files.writeString(config.toPath(), gson.toJson(levelConfig), StandardCharsets.UTF_8, StandardOpenOption.WRITE);
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else {
             //verify the provider
-            provider = LevelProviderManager.getProvider(path);
+            Class<? extends LevelProvider> provider = LevelProviderManager.getProvider(path);
             if (provider == null) {
-                log.error(this.getLanguage().tr("nukkit.level.loadError", name, "Unknown provider"));
-                return false;
+                log.error(this.getLanguage().tr("nukkit.level.loadError", levelFolderName, "Unknown provider"));
+                return null;
             }
             Map<Integer, LevelConfig.GeneratorConfig> map = new HashMap<>();
             //todo nether the_end overworld
-            map.put(0, new LevelConfig.GeneratorConfig("flat", System.currentTimeMillis(), DimensionEnum.OVERWORLD.getDimensionData(), Collections.emptyMap()));
-            levelConfig = new LevelConfig(LevelProviderManager.getProviderName(provider), map);
+            map.put(0, new LevelConfig.GeneratorConfig("flat", System.currentTimeMillis(), false, LevelConfig.AntiXrayMode.LOW, true, DimensionEnum.OVERWORLD.getDimensionData(), Collections.emptyMap()));
+            levelConfig = new LevelConfig(LevelProviderManager.getProviderName(provider), true, map);
             try {
                 config.createNewFile();
                 Files.writeString(config.toPath(), gson.toJson(levelConfig), StandardCharsets.UTF_8, StandardOpenOption.CREATE);
@@ -2455,22 +2481,44 @@ public class Server {
                 throw new RuntimeException(e);
             }
         }
+        return levelConfig;
+    }
+
+    /**
+     * @param levelFolderName the level folder name
+     * @return whether load success
+     */
+    public boolean loadLevel(String levelFolderName) {
+        if (levelFolderName.matches(levelDimPattern)) {
+            levelFolderName = levelFolderName.replaceFirst("\\sDim\\d$", "");
+        }
+        LevelConfig levelConfig = getLevelConfig(levelFolderName);
+        if (levelConfig == null) return false;
+
+        String path;
+        if (levelFolderName.contains("/") || levelFolderName.contains("\\")) {
+            path = levelFolderName;
+        } else {
+            path = new File(this.getDataPath(), "worlds/" + levelFolderName).getAbsolutePath();
+        }
+        String pathS = Path.of(path).toString();
+        Class<? extends LevelProvider> provider = LevelProviderManager.getProvider(pathS);
 
         Map<Integer, LevelConfig.GeneratorConfig> generators = levelConfig.generators();
         for (var entry : generators.entrySet()) {
-            String levelName = name + " Dim" + entry.getKey();
+            String levelName = levelFolderName + " Dim" + entry.getKey();
             if (this.isLevelLoaded(levelName)) {
                 return true;
             }
             Level level;
             try {
                 if (provider == null) {
-                    log.error(this.getLanguage().tr("nukkit.level.loadError", name, "the level does not exist"));
+                    log.error(this.getLanguage().tr("nukkit.level.loadError", levelFolderName, "the level does not exist"));
                     return false;
                 }
-                level = new Level(this, levelName, path, generators.size(), provider, entry.getValue());
+                level = new Level(this, levelName, pathS, generators.size(), provider, entry.getValue());
             } catch (Exception e) {
-                log.error(this.getLanguage().tr("nukkit.level.loadError", name, e.getMessage()), e);
+                log.error(this.getLanguage().tr("nukkit.level.loadError", levelFolderName, e.getMessage()), e);
                 return false;
             }
             this.levels.put(level.getId(), level);
@@ -2482,10 +2530,6 @@ public class Server {
             WorldCommand.WORLD_NAME_ENUM.updateSoftEnum();
         }
         return true;
-    }
-
-    public boolean generateLevel(String name) {
-        return this.generateLevel(name, null);
     }
 
     public boolean generateLevel(String name, @Nullable LevelConfig levelConfig) {
@@ -2506,7 +2550,8 @@ public class Server {
         if (config.exists()) {
             try {
                 levelConfig = gson.fromJson(new FileReader(config), LevelConfig.class);
-            } catch (FileNotFoundException e) {
+                Files.writeString(config.toPath(), gson.toJson(levelConfig), StandardCharsets.UTF_8, StandardOpenOption.WRITE);
+            } catch (Exception e) {
                 log.error("The levelConfig is not exists under the {} path", path);
                 return false;
             }
@@ -2628,7 +2673,7 @@ public class Server {
      */
     public void setMaxPlayers(int maxPlayers) {
         this.maxPlayers = maxPlayers;
-        this.getNetwork().getPong().maximumPlayerCount(maxPlayers).update();;
+        this.getNetwork().getPong().maximumPlayerCount(maxPlayers).update();
     }
 
     /**
@@ -2855,7 +2900,7 @@ public class Server {
      */
     public void setDefaultGamemode(int defaultGamemode) {
         this.defaultGamemode = defaultGamemode;
-        this.getNetwork().getPong().gameType(Server.getGamemodeString(defaultGamemode, true)).update();;
+        this.getNetwork().getPong().gameType(Server.getGamemodeString(defaultGamemode, true)).update();
     }
 
     /**
@@ -2872,7 +2917,7 @@ public class Server {
      */
     public void setMotd(String motd) {
         this.setPropertyString("motd", motd);
-        this.getNetwork().getPong().motd(motd).update();;
+        this.getNetwork().getPong().motd(motd).update();
     }
 
     /**
@@ -2893,7 +2938,7 @@ public class Server {
      */
     public void setSubMotd(String subMotd) {
         this.setPropertyString("sub-motd", subMotd);
-        this.getNetwork().getPong().subMotd(subMotd).update();;
+        this.getNetwork().getPong().subMotd(subMotd).update();
     }
 
     /**

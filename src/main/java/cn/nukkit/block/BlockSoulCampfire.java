@@ -5,7 +5,6 @@ import cn.nukkit.entity.Entity;
 import cn.nukkit.event.entity.EntityDamageByBlockEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
-import cn.nukkit.item.ItemSoulCampfire;
 import org.jetbrains.annotations.NotNull;
 
 public class BlockSoulCampfire extends BlockCampfire {
@@ -35,13 +34,8 @@ public class BlockSoulCampfire extends BlockCampfire {
     }
 
     @Override
-    public Item toItem() {
-        return new ItemSoulCampfire();
-    }
-
-    @Override
     public Item[] getDrops(Item item) {
-        return new Item[]{toItem()};
+        return new Item[]{Item.get(BlockID.SOUL_SOIL, 0, 1)};
     }
 
     @Override

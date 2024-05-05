@@ -6,7 +6,6 @@ import cn.nukkit.blockentity.BlockEntityItemFrame;
 import cn.nukkit.event.block.ItemFrameUseEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.item.Item;
-import cn.nukkit.item.ItemFrame;
 import cn.nukkit.item.ItemID;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Sound;
@@ -142,7 +141,7 @@ public class BlockFrame extends BlockTransparent implements BlockEntityHolder<Bl
                 setStoringMap(true);
                 this.getLevel().setBlock(this, this, true);
             }
-            this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_ITEM_FRAME_ITEM_ADDED);
+            this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_ITEMFRAME_ITEM_ADD);
         } else {
             ItemFrameUseEvent event = new ItemFrameUseEvent(player, this, itemFrame, null, ItemFrameUseEvent.Action.ROTATION);
             this.getLevel().getServer().getPluginManager().callEvent(event);
@@ -152,7 +151,7 @@ public class BlockFrame extends BlockTransparent implements BlockEntityHolder<Bl
                 setStoringMap(false);
                 this.getLevel().setBlock(this, this, true);
             }
-            this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_ITEM_FRAME_ITEM_ROTATED);
+            this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_ITEMFRAME_ITEM_ROTATE);
         }
         return true;
     }
@@ -195,7 +194,7 @@ public class BlockFrame extends BlockTransparent implements BlockEntityHolder<Bl
     @Override
     public boolean onBreak(Item item) {
         this.getLevel().setBlock(this, layer, Block.get(BlockID.AIR), true, true);
-        this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_ITEM_FRAME_REMOVED);
+        this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_ITEMFRAME_BREAK);
         return true;
     }
 
@@ -211,11 +210,6 @@ public class BlockFrame extends BlockTransparent implements BlockEntityHolder<Bl
                     toItem()
             };
         }
-    }
-
-    @Override
-    public Item toItem() {
-        return new ItemFrame();
     }
 
     @Override

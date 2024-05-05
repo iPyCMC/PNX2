@@ -65,7 +65,7 @@ public class ItemStackRequestPacketProcessor extends DataPacketProcessor<ItemSta
                 context.setCurrentActionIndex(index);
                 ItemStackRequestActionProcessor<ItemStackRequestAction> processor = (ItemStackRequestActionProcessor<ItemStackRequestAction>) PROCESSORS.get(action.getType());
                 if (processor == null) {
-                    log.warn("Unhandled inventory action type " + action.getType());
+                    log.warn("Unhandled inventory action type {}", action.getType());
                     continue;
                 }
 

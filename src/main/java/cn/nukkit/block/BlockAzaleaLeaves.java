@@ -4,7 +4,8 @@ import cn.nukkit.block.property.enums.WoodType;
 import cn.nukkit.item.Item;
 import org.jetbrains.annotations.NotNull;
 
-import static cn.nukkit.block.property.CommonBlockProperties.*;
+import static cn.nukkit.block.property.CommonBlockProperties.PERSISTENT_BIT;
+import static cn.nukkit.block.property.CommonBlockProperties.UPDATE_BIT;
 
 public class BlockAzaleaLeaves extends BlockLeaves {
 
@@ -44,8 +45,4 @@ public class BlockAzaleaLeaves extends BlockLeaves {
         return WoodType.OAK;
     }
 
-    @Override
-    protected Item getSapling() {
-        return Block.get(AZALEA).toItem();
-    }
 }

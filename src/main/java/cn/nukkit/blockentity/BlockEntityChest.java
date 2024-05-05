@@ -1,6 +1,5 @@
 package cn.nukkit.blockentity;
 
-import cn.nukkit.Player;
 import cn.nukkit.block.Block;
 import cn.nukkit.inventory.BaseInventory;
 import cn.nukkit.inventory.ChestInventory;
@@ -10,7 +9,7 @@ import cn.nukkit.level.format.IChunk;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 
-import java.util.HashSet;
+import java.util.Objects;
 
 /**
  * @author MagicDroidX (Nukkit Project)
@@ -25,35 +24,35 @@ public class BlockEntityChest extends BlockEntitySpawnableContainer {
 
     @Override
     protected ContainerInventory requireContainerInventory() {
-        if (this.inventory == null) {
-            return new ChestInventory(this);
-        } else return inventory;
+        return Objects.requireNonNullElseGet(this.inventory, () -> new ChestInventory(this));
     }
 
     @Override
     public void close() {
         if (!closed) {
             unpair();
+            this.getInventory().getViewers().forEach(p -> p.removeWindow(this.getInventory()));
+            this.getRealInventory().getViewers().forEach(p -> p.removeWindow(this.getRealInventory()));
 
-            for (Player player : new HashSet<>(this.getInventory().getViewers())) {
-                player.removeWindow(this.getInventory());
+            this.closed = true;
+            if (this.chunk != null) {
+                this.chunk.removeBlockEntity(this);
             }
-
-            for (Player player : new HashSet<>(this.getInventory().getViewers())) {
-                player.removeWindow(this.getRealInventory());
+            if (this.level != null) {
+                this.level.removeBlockEntity(this);
             }
-            super.close();
+            this.level = null;
         }
     }
 
     @Override
     public boolean isBlockEntityValid() {
         String blockID = this.getBlock().getId();
-        return blockID == Block.CHEST || blockID == Block.TRAPPED_CHEST;
+        return blockID.equals(Block.CHEST) || blockID.equals(Block.TRAPPED_CHEST);
     }
 
     public int getSize() {
-        return 27;
+        return this.doubleInventory != null ? this.doubleInventory.getSize() : this.inventory.getSize();
     }
 
     @Override
@@ -115,7 +114,7 @@ public class BlockEntityChest extends BlockEntitySpawnableContainer {
     }
 
     public boolean pairWith(BlockEntityChest chest) {
-        if (this.isPaired() || chest.isPaired() || this.getBlock().getId() != chest.getBlock().getId()) {
+        if (this.isPaired() || chest.isPaired() || !this.getBlock().getId().equals(chest.getBlock().getId())) {
             return false;
         }
 
@@ -192,7 +191,7 @@ public class BlockEntityChest extends BlockEntitySpawnableContainer {
 
     @Override
     public void setName(String name) {
-        if (name == null || name.equals("")) {
+        if (name == null || name.isEmpty()) {
             this.namedTag.remove("CustomName");
             return;
         }
