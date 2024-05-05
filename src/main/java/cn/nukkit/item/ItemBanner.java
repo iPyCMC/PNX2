@@ -28,21 +28,11 @@ public class ItemBanner extends Item {
 
     public ItemBanner(Integer meta, int count) {
         super(BANNER, meta, count, "Banner");
-        updateName();
     }
 
     @Override
     public void internalAdjust() {
         block = BlockStandingBanner.PROPERTIES.getBlockState(GROUND_SIGN_DIRECTION.createValue(getDamage())).toBlock();
-    }
-
-    @Override
-    public void setDamage(int meta) {
-        super.setDamage(meta);
-        updateName();
-    }
-
-    private void updateName() {
         name = getBaseDyeColor().getName() + " Banner";
     }
 

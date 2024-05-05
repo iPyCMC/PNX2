@@ -52,6 +52,17 @@ public abstract class Block extends Position implements Metadatable, AxisAligned
     protected BlockColor color;
     public int layer;
 
+    public static boolean isNotActivate(Player player) {
+        if (player == null) {
+            return true;
+        }
+        Item itemInHand = player.getInventory().getItemInHand();
+        if ((player.isSneaking() || player.isFlySneaking()) && !(itemInHand.isTool() || itemInHand.isNull())) {
+            return true;
+        }
+        return false;
+    }
+
     @NotNull
     public static Block get(String id) {
         id = id.contains(":") ? id : "minecraft:" + id;
@@ -267,18 +278,14 @@ public abstract class Block extends Position implements Metadatable, AxisAligned
     }
 
     /**
-     * 控制方块硬度
-     *
-     * @return 方块的硬度
+     * Define the block hardness
      */
     public double getHardness() {
         return 10;
     }
 
     /**
-     * 控制方块爆炸抗性
-     *
-     * @return 方块的爆炸抗性
+     * Defines the block explosion resistance
      */
     public double getResistance() {
         return 1;
@@ -1277,7 +1284,7 @@ public abstract class Block extends Position implements Metadatable, AxisAligned
     }
 
     public Item toItem() {
-        return new ItemBlock(this);
+        return new ItemBlock(this.getProperties().getDefaultState().toBlock());
     }
 
     /**

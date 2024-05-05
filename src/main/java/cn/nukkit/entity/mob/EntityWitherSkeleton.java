@@ -1,12 +1,14 @@
 package cn.nukkit.entity.mob;
 
 import cn.nukkit.Player;
+import cn.nukkit.block.BlockID;
 import cn.nukkit.entity.*;
 import cn.nukkit.entity.ai.behavior.Behavior;
 import cn.nukkit.entity.ai.behaviorgroup.BehaviorGroup;
 import cn.nukkit.entity.ai.behaviorgroup.IBehaviorGroup;
 import cn.nukkit.entity.ai.controller.LookController;
 import cn.nukkit.entity.ai.controller.WalkController;
+import cn.nukkit.entity.ai.evaluator.AttackCheckEvaluator;
 import cn.nukkit.entity.ai.evaluator.MemoryCheckNotEmptyEvaluator;
 import cn.nukkit.entity.ai.executor.FlatRandomRoamExecutor;
 import cn.nukkit.entity.ai.executor.MeleeAttackExecutor;
@@ -64,7 +66,7 @@ public class EntityWitherSkeleton extends EntityMob implements EntityWalkable, E
                 Set.of(
                         new Behavior(new MeleeAttackExecutor(CoreMemoryTypes.ATTACK_TARGET, 0.3f, 40, true, 10, Effect.get(EffectType.WITHER).setDuration(200)), all(
                                 new MemoryCheckNotEmptyEvaluator(CoreMemoryTypes.ATTACK_TARGET),
-                                entity -> !entity.getMemoryStorage().notEmpty(CoreMemoryTypes.ATTACK_TARGET) || !(entity.getMemoryStorage().get(CoreMemoryTypes.ATTACK_TARGET) instanceof Player player) || player.isSurvival() || player.isAdventure()
+                                new AttackCheckEvaluator()
                         ), 3, 1),
                         new Behavior(new MeleeAttackExecutor(CoreMemoryTypes.NEAREST_PLAYER, 0.3f, 40, false, 10, Effect.get(EffectType.WITHER).setDuration(200)), all(
                                 new MemoryCheckNotEmptyEvaluator(CoreMemoryTypes.NEAREST_PLAYER),
@@ -151,7 +153,7 @@ public class EntityWitherSkeleton extends EntityMob implements EntityWalkable, E
         }
         //掉落头的概率为2.5%
         if (Utils.rand(0, 40) == 1) {
-            drops.add(Item.get(Item.SKULL, 1, 1));
+            drops.add(Item.get(BlockID.SKULL, 1, 1));
         }
         return drops.toArray(Item.EMPTY_ARRAY);
     }

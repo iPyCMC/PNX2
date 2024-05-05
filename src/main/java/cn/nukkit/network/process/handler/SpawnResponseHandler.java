@@ -3,7 +3,6 @@ package cn.nukkit.network.process.handler;
 import cn.nukkit.Player;
 import cn.nukkit.entity.data.property.EntityProperty;
 import cn.nukkit.network.connection.BedrockSession;
-import cn.nukkit.network.process.SessionState;
 import cn.nukkit.network.protocol.AvailableEntityIdentifiersPacket;
 import cn.nukkit.network.protocol.BiomeDefinitionListPacket;
 import cn.nukkit.network.protocol.ItemComponentPacket;
@@ -27,7 +26,8 @@ public class SpawnResponseHandler extends BedrockSessionPacketHandler {
 
         this.session.syncCraftingData();
 
-        //写入自定义物品数据
+        // 写入自定义物品数据
+        // Write custom item data
         log.debug("Sending component items");
         var itemComponentPacket = new ItemComponentPacket();
         if (!Registries.ITEM.getCustomItemDefinition().isEmpty()) {
@@ -48,7 +48,8 @@ public class SpawnResponseHandler extends BedrockSessionPacketHandler {
         log.debug("Sending actor identifiers");
         player.dataPacket(new AvailableEntityIdentifiersPacket());
 
-        //注册实体属性
+        // 注册实体属性
+        // Register entity attributes
         log.debug("Sending actor properties");
         for (SyncEntityPropertyPacket pk : EntityProperty.getPacketCache()) {
             player.dataPacket(pk);
@@ -63,7 +64,8 @@ public class SpawnResponseHandler extends BedrockSessionPacketHandler {
         log.debug("Sending available commands");
         this.session.syncAvailableCommands();
 
-        //发送玩家权限列表
+        // 发送玩家权限列表
+        // Send player permission list
         log.debug("Sending abilities");
         var col = Collections.singleton(player);
         server.getOnlinePlayers().values().forEach(p -> {
@@ -130,11 +132,12 @@ public class SpawnResponseHandler extends BedrockSessionPacketHandler {
         startPk.gameRules = player.getLevel().getGameRules();
         startPk.levelId = "";
         startPk.worldName = player.getLevelName();
-        startPk.generator = (byte) ((player.getLevel().getDimension() + 1) & 0xff); //0 旧世界, 1 主世界, 2 下界, 3末地
+        startPk.generator = (byte) ((player.getLevel().getDimension() + 1) & 0xff); //0 旧世界 Old world, 1 主世界 Main world, 2 下界 Nether, 3 末地 End
         startPk.serverAuthoritativeMovement = server.getServerAuthoritativeMovement();
         startPk.isInventoryServerAuthoritative = true;//enable item stack request packet
         startPk.blockNetworkIdsHashed = true;//enable blockhash
-        //写入自定义方块数据
+        // 写入自定义方块数据
+        // Write custom block data
         startPk.blockProperties.addAll(Registries.BLOCK.getCustomBlockDefinitionList());
         startPk.playerPropertyData = EntityProperty.getPlayerPropertyCache();
         player.dataPacketImmediately(startPk);
@@ -147,6 +150,6 @@ public class SpawnResponseHandler extends BedrockSessionPacketHandler {
 
     @Override
     public void handle(SetLocalPlayerAsInitializedPacket pk) {
-        this.session.getMachine().fire(SessionState.IN_GAME);
+        log.debug("receive SetLocalPlayerAsInitializedPacket for {}", this.player.getPlayerInfo().getUsername());
     }
 }

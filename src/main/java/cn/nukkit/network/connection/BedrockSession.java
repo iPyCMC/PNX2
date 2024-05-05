@@ -20,15 +20,7 @@ import cn.nukkit.network.process.handler.LoginHandler;
 import cn.nukkit.network.process.handler.ResourcePackHandler;
 import cn.nukkit.network.process.handler.SessionStartHandler;
 import cn.nukkit.network.process.handler.SpawnResponseHandler;
-import cn.nukkit.network.protocol.AvailableCommandsPacket;
-import cn.nukkit.network.protocol.CreativeContentPacket;
-import cn.nukkit.network.protocol.DataPacket;
-import cn.nukkit.network.protocol.DisconnectPacket;
-import cn.nukkit.network.protocol.NetworkSettingsPacket;
-import cn.nukkit.network.protocol.PacketHandler;
-import cn.nukkit.network.protocol.PlayStatusPacket;
-import cn.nukkit.network.protocol.ProtocolInfo;
-import cn.nukkit.network.protocol.SetCommandsEnabledPacket;
+import cn.nukkit.network.protocol.*;
 import cn.nukkit.network.protocol.types.PacketCompressionAlgorithm;
 import cn.nukkit.player.info.PlayerInfo;
 import cn.nukkit.plugin.InternalPlugin;
@@ -53,6 +45,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -429,8 +422,7 @@ public class BedrockSession {
 
     private void onClientSpawned() {
         log.debug("Received spawn response, entering in-game phase");
-        getPlayer().setImmobile(false); //TODO: HACK: we set this during the spawn sequence to prevent the client sending junk movements
-
+        Objects.requireNonNull(getPlayer()).setImmobile(false); //TODO: HACK: we set this during the spawn sequence to prevent the client sending junk movements
         handle.onPlayerLocallyInitialized();
     }
 
@@ -445,15 +437,17 @@ public class BedrockSession {
     public void handleDataPacket(DataPacket packet) {
         DataPacketReceiveEvent ev = new DataPacketReceiveEvent(this.getPlayer(), packet);
         Server.getInstance().getPluginManager().callEvent(ev);
-        if (ev.isCancelled()) {
+
+        if (ev.isCancelled())
             return;
-        }
-        if (this.packetHandler != null) {
-            if (this.packetHandler instanceof InGamePacketHandler i) {
-                i.managerHandle(packet);
-            } else {
-                packet.handle(this.packetHandler);
-            }
+
+        if(this.packetHandler == null)
+            return;
+
+        if (this.packetHandler instanceof InGamePacketHandler i) {
+            i.managerHandle(packet);
+        } else {
+            packet.handle(this.packetHandler);
         }
     }
 

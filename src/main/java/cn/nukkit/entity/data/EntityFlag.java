@@ -118,7 +118,8 @@ public enum EntityFlag {
     TIMER_FLAG_1(115),
     TIMER_FLAG_2(116),
     TIMER_FLAG_3(117),
-    BALLOON_ATTACHED_ENTITY(118);
+    BALLOON_ATTACHED_ENTITY(119), //TODO: IDK CURRENT VALUE ATM
+    BODY_ROTATION_BLOCKED(118);
 
     private final int value;
 

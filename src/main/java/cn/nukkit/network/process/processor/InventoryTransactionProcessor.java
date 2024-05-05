@@ -299,7 +299,7 @@ public class InventoryTransactionProcessor extends DataPacketProcessor<Inventory
                 if (!player.spawned || !player.isAlive() || player.isCreative()) {
                     return;
                 }
-                player.resetCraftingGridType();
+                player.resetInventory();
                 Item i = player.getInventory().getItemInHand();
                 Item oldItem = i.clone();
                 if (player.isSurvival() || player.isAdventure()) {
@@ -342,6 +342,9 @@ public class InventoryTransactionProcessor extends DataPacketProcessor<Inventory
                 PlayerInteractEvent interactEvent = new PlayerInteractEvent(player, item, directionVector, face, PlayerInteractEvent.Action.RIGHT_CLICK_AIR);
                 player.getServer().getPluginManager().callEvent(interactEvent);
                 if (interactEvent.isCancelled()) {
+                    if(interactEvent.getItem() != null && interactEvent.getItem().isArmor()) {
+                        player.getInventory().sendArmorContents(player);
+                    }
                     player.getInventory().sendHeldItem(player);
                     return;
                 }

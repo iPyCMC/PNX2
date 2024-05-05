@@ -3,6 +3,7 @@ package cn.nukkit.block;
 import cn.nukkit.Player;
 import cn.nukkit.block.property.enums.SpongeType;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemBlock;
 import cn.nukkit.item.ItemTool;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.particle.CloudParticle;
@@ -24,7 +25,8 @@ public class BlockSponge extends BlockSolid {
             SPONGE_TYPE);
 
     @Override
-    @NotNull public BlockProperties getProperties() {
+    @NotNull
+    public BlockProperties getProperties() {
         return PROPERTIES;
     }
 
@@ -69,10 +71,11 @@ public class BlockSponge extends BlockSolid {
 
     @Override
     public boolean place(@NotNull Item item, @NotNull Block block, @NotNull Block target, @NotNull BlockFace face, double fx, double fy, double fz, Player player) {
+        BlockSponge clone = (BlockSponge) this.clone();
         if (this.getSpongeType() == WET && level.getDimension() == Level.DIMENSION_NETHER) {
-            this.setSpongeType(DRY);
-            level.setBlock(block, this, true, true);
-            this.getLevel().addLevelEvent(block.add(0.5, 0.875, 0.5), LevelEventPacket.EVENT_SOUND_EXPLODE);
+            clone.setSpongeType(DRY);
+            level.setBlock(block, clone, true, true);
+            this.getLevel().addLevelEvent(block.add(0.5, 0.875, 0.5), LevelEventPacket.EVENT_CAULDRON_EXPLODE);
 
             ThreadLocalRandom random = ThreadLocalRandom.current();
             for (int i = 0; i < 8; ++i) {
@@ -81,16 +84,15 @@ public class BlockSponge extends BlockSolid {
 
             return true;
         }
-        if (this.getSpongeType() == DRY && (
-                block instanceof BlockFlowingWater ||
-                        block.getLevelBlockAround().stream().anyMatch(b -> b instanceof BlockFlowingWater)
-        ) && performWaterAbsorb(block)) {
-            this.setSpongeType(WET);
-            level.setBlock(block, this, true, true);
+        if (this.getSpongeType() == DRY && (block instanceof BlockFlowingWater || block.getLevelBlockAround().stream().anyMatch(b -> b instanceof BlockFlowingWater)) &&
+                performWaterAbsorb(block)
+        ) {
+            clone.setSpongeType(WET);
+            level.setBlock(block, clone, true, true);
 
             for (int i = 0; i < 4; i++) {
                 LevelEventPacket packet = new LevelEventPacket();
-                packet.evid = LevelEventPacket.EVENT_PARTICLE_DESTROY;
+                packet.evid = LevelEventPacket.EVENT_PARTICLE_DESTROY_BLOCK;
                 packet.x = (float) block.getX() + 0.5f;
                 packet.y = (float) block.getY() + 1f;
                 packet.z = (float) block.getZ() + 0.5f;
@@ -102,6 +104,11 @@ public class BlockSponge extends BlockSolid {
         }
 
         return super.place(item, block, target, face, fx, fy, fz, player);
+    }
+
+    @Override
+    public Item toItem() {
+        return new ItemBlock(this, getSpongeType().ordinal());
     }
 
     private boolean performWaterAbsorb(Block block) {
@@ -142,5 +149,6 @@ public class BlockSponge extends BlockSolid {
         return waterRemoved > 0;
     }
 
-    private record Entry(Block block, int distance) {}
+    private record Entry(Block block, int distance) {
+    }
 }

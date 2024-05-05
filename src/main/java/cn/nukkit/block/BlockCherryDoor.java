@@ -1,8 +1,7 @@
 package cn.nukkit.block;
 
 import cn.nukkit.block.property.CommonBlockProperties;
-import cn.nukkit.item.Item;
-import cn.nukkit.item.ItemID;
+import cn.nukkit.level.Sound;
 import org.jetbrains.annotations.NotNull;
 
 public class BlockCherryDoor extends BlockWoodenDoor {
@@ -27,7 +26,12 @@ public class BlockCherryDoor extends BlockWoodenDoor {
     }
 
     @Override
-    public Item toItem() {
-        return Item.get(ItemID.CHERRY_DOOR);
+    public void playOpenSound() {
+        level.addSound(this, Sound.OPEN_CHERRY_WOOD_DOOR);
+    }
+
+    @Override
+    public void playCloseSound() {
+        level.addSound(this, Sound.CLOSE_CHERRY_WOOD_DOOR);
     }
 }

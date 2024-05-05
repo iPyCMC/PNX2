@@ -4,6 +4,7 @@ import cn.nukkit.block.BlockComposter;
 import cn.nukkit.command.SimpleCommandMap;
 import cn.nukkit.dispenser.DispenseBehaviorRegister;
 import cn.nukkit.entity.Attribute;
+import cn.nukkit.entity.data.Skin;
 import cn.nukkit.entity.data.profession.Profession;
 import cn.nukkit.event.server.QueryRegenerateEvent;
 import cn.nukkit.inventory.HumanEnderChestInventory;
@@ -31,6 +32,7 @@ import cn.nukkit.scheduler.ServerScheduler;
 import cn.nukkit.utils.ClientChainData;
 import cn.nukkit.utils.Config;
 import cn.nukkit.utils.collection.FreezableArrayManager;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -57,6 +59,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@Slf4j
 public class GameMockExtension extends MockitoExtension {
     final static Server server = mock(Server.class);
     static BanList banList = mock(BanList.class);
@@ -71,9 +74,8 @@ public class GameMockExtension extends MockitoExtension {
     static MockedStatic<Server> serverMockedStatic;
     final static GameMockExtension gameMockExtension;
     final static BlockRegistry BLOCK_REGISTRY;
-    final static Player player;
-    static Level level;
-    static Level terra;
+    final static TestPlayer player;
+    public static Level level;
 
     static {
         Registries.PACKET.init();
@@ -187,10 +189,10 @@ public class GameMockExtension extends MockitoExtension {
         );
         doNothing().when(serverSession).sendPacketImmediately(any());
         doNothing().when(serverSession).sendPacket(any());
-        player = new Player(serverSession, info);
+        player = new TestPlayer(serverSession, info);
         player.loggedIn = true;
-        player.username = "test";
-        player.temporalVector = new Vector3(0, 0, 0);
+        TestUtils.setField(Player.class, player, "info", new PlayerInfo("test", UUID.nameUUIDFromBytes(new byte[]{1, 2, 3}), mock(Skin.class), mock(ClientChainData.class)));
+        player.temporalVector = new Vector3(0, 100, 0);
         player.setInventories(new Inventory[]{
                 new HumanInventory(player),
                 new HumanOffHandInventory(player),
@@ -198,19 +200,17 @@ public class GameMockExtension extends MockitoExtension {
         });
         PlayerHandle playerHandle = new PlayerHandle(player);
         playerHandle.addDefaultWindows();
+        TestUtils.setField(Player.class, player, "foodData", new PlayerFood(player, 20, 20));
         try {
-            FieldUtils.writeDeclaredField(player, "foodData", new PlayerFood(player, 20, 20), true);
             FileUtils.copyDirectory(new File("src/test/resources/level"), new File("src/test/resources/newlevel"));
-            level = new Level(Server.getInstance(), "newlevel", "src/test/resources/newlevel",
-                    1, LevelDBProvider.class, new LevelConfig.GeneratorConfig("flat", 114514, DimensionEnum.OVERWORLD.getDimensionData(), new HashMap<>()));
-            level.initLevel();
-            player.level = level;
-            player.setPosition(new Vector3(0, 100, 0));
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        level = new Level(Server.getInstance(), "newlevel", "src/test/resources/newlevel",
+                1, LevelDBProvider.class, new LevelConfig.GeneratorConfig("flat", 114514, false, LevelConfig.AntiXrayMode.LOW, true, DimensionEnum.OVERWORLD.getDimensionData(), new HashMap<>()));
+        level.initLevel();
+        player.level = level;
+        player.setPosition(new Vector3(0, 100, 0));
 
         Thread t = new Thread(() -> {
             level.close();
@@ -236,7 +236,7 @@ public class GameMockExtension extends MockitoExtension {
         return b || parameterContext.getParameter().getType() == GameMockExtension.class ||
                 parameterContext.getParameter().getType().equals(BlockRegistry.class)
                 || parameterContext.getParameter().getType().equals(LevelProvider.class)
-                || parameterContext.getParameter().getType().equals(Player.class)
+                || parameterContext.getParameter().getType().equals(TestPlayer.class)
                 || parameterContext.getParameter().getType().equals(Level.class);
     }
 
@@ -254,7 +254,7 @@ public class GameMockExtension extends MockitoExtension {
         if (parameterContext.getParameter().getType().equals(Level.class)) {
             return level;
         }
-        if (parameterContext.getParameter().getType().equals(Player.class)) {
+        if (parameterContext.getParameter().getType().equals(TestPlayer.class)) {
             return player;
         }
         return super.resolveParameter(parameterContext, context);

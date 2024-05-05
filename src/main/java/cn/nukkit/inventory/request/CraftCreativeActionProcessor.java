@@ -23,6 +23,10 @@ public class CraftCreativeActionProcessor implements ItemStackRequestActionProce
     @Override
     public ActionResponse handle(CraftCreativeAction action, Player player, ItemStackRequestContext context) {
         var item = Registries.CREATIVE.get(action.getCreativeItemNetworkId() - 1);
+        if (!player.isCreative()) {
+            log.warn("This player {} is get createitems in non-creative mode, which may be a hacker!",player.getName());
+            return context.error();
+        }
         if (item == null) {
             log.warn("Unknown creative item network id: {}", action.getCreativeItemNetworkId() - 1);
             return context.error();
@@ -30,7 +34,7 @@ public class CraftCreativeActionProcessor implements ItemStackRequestActionProce
         item = item.clone().autoAssignStackNetworkId();
         item.setCount(item.getMaxStackSize());
         player.getCreativeOutputInventory().setItem(0, item, false);
-        //从创造物品栏拿东西不需要响应
+        //Picking up something from the creation inventory does not require a response
         context.put(CRAFT_CREATIVE_KEY, true);
         return null;
     }

@@ -8,7 +8,7 @@ plugins {
     `maven-publish`
     idea
     jacoco
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("io.github.goooler.shadow") version "8.1.7"
     id("io.freefair.lombok") version "8.4"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
 }
@@ -40,7 +40,6 @@ dependencies {
     api(libs.snakeyaml)
     api(libs.stateless4j)
 
-
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
@@ -57,9 +56,8 @@ dependencies {
     implementation(libs.terra)
     implementation(libs.bundles.compress)
     implementation(libs.bundles.terminal)
-    implementation(libs.bundles.graalvm)
+    implementation(libs.graalvm.polyglot)
     runtimeOnly(libs.bundles.graalvm.runtime)
-
     testImplementation(libs.bundles.test)
     testImplementation(libs.commonsio)
     testImplementation(libs.commonslang3)
@@ -138,8 +136,8 @@ tasks.clean {
 tasks.compileJava {
     options.encoding = "UTF-8"
     options.compilerArgs.add("-Xpkginfo:always")
-    java.sourceCompatibility = JavaVersion.VERSION_17
-    java.targetCompatibility = JavaVersion.VERSION_17
+    java.sourceCompatibility = JavaVersion.VERSION_21
+    java.targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.test {
@@ -163,45 +161,23 @@ tasks.withType<AbstractCopyTask>() {
 }
 
 tasks.named<AbstractArchiveTask>("sourcesJar") {
-    dependsOn("copySomeFile")
     destinationDirectory = layout.buildDirectory
-}
-
-tasks.compileTestJava {
-    dependsOn("copySomeFile")
 }
 
 tasks.jar {
     destinationDirectory = layout.buildDirectory
-    finalizedBy("copySomeFile")
     doLast {//execution phase
-        project.extra["jarfile"] = archiveFile.get()
-    }
-}
-
-tasks.register<Copy>("copySomeFile") {
-    dependsOn("jar")
-    from(project.projectDir.resolve("scripts"))
-    into(layout.buildDirectory)
-    //Keep track of incremental update, and if it does, the copySomeFile task need to be updated
-    if (tasks.jar.get().isEnabled) {
-        // Input files are added only if the jar task exists
-        inputs.files(tasks.jar)
-    }
-    doLast {//execution phase
-        if (project.extra.has("jarfile")) {
-            val f: RegularFile = project.extra["jarfile"] as RegularFile
-            val tf: RegularFile = layout.buildDirectory.file("${project.description}.jar").get()
-            Files.copy(Path.of(f.asFile.absolutePath), Path.of(tf.asFile.absolutePath), StandardCopyOption.REPLACE_EXISTING)
-        }
+        val f: RegularFile = archiveFile.get()
+        val tf: RegularFile = layout.buildDirectory.file("${project.description}.jar").get()
+        Files.copy(Path.of(f.asFile.absolutePath), Path.of(tf.asFile.absolutePath), StandardCopyOption.REPLACE_EXISTING)
     }
 }
 
 tasks.shadowJar {
-    dependsOn("copyDependencies", "copySomeFile")
+    dependsOn("copyDependencies")
     manifest {
         attributes(
-                "Main-Class" to "cn.nukkit.JarStart"
+            "Main-Class" to "cn.nukkit.JarStart"
         )
     }
 
@@ -218,17 +194,13 @@ tasks.register<Copy>("copyDependencies") {
     into(layout.buildDirectory.dir("libs"))
 }
 
-tasks.delombok {
-    dependsOn("copySomeFile")
-}
-
 tasks.javadoc {
     options.encoding = StandardCharsets.UTF_8.name()
     includes.add("**/**.java")
     val javadocOptions = options as CoreJavadocOptions
     javadocOptions.addStringOption(
-            "source",
-            java.sourceCompatibility.toString()
+        "source",
+        java.sourceCompatibility.toString()
     )
     // Suppress some meaningless warnings
     javadocOptions.addStringOption("Xdoclint:none", "-quiet")

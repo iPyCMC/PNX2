@@ -2,6 +2,7 @@ package cn.nukkit.block;
 
 import cn.nukkit.block.property.CommonBlockProperties;
 import cn.nukkit.block.property.enums.WoodType;
+import cn.nukkit.item.Item;
 import org.jetbrains.annotations.NotNull;
 
 public class BlockAcaciaLeaves extends BlockLeaves {
@@ -20,5 +21,10 @@ public class BlockAcaciaLeaves extends BlockLeaves {
     @Override
     public WoodType getType() {
         return WoodType.ACACIA;
+    }
+
+    @Override
+    public Item toSapling() {
+        return Item.get(ACACIA_SAPLING);
     }
 }

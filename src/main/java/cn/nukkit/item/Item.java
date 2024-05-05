@@ -101,7 +101,7 @@ public abstract class Item implements Cloneable, ItemID {
         if (name != null) {
             this.name = name.intern();
         }
-        setDamage(meta);
+        this.setDamage(meta);
         if (autoAssignStackNetworkId) {
             this.autoAssignStackNetworkId();
         }
@@ -115,7 +115,7 @@ public abstract class Item implements Cloneable, ItemID {
             this.name = name.intern();
         }
         this.block = block;
-        this.meta = meta;
+        this.setDamage(meta);
         if (autoAssignStackNetworkId) {
             this.autoAssignStackNetworkId();
         }
@@ -159,13 +159,12 @@ public abstract class Item implements Cloneable, ItemID {
             if (itemBlockState == null || itemBlockState == BlockAir.STATE) {
                 return Item.AIR;
             }
-            item = new ItemBlock(Registries.BLOCK.get(itemBlockState));
+            item = itemBlockState.toItem();
             item.setCount(count);
             if (tags != null) {
                 item.setCompoundTag(tags);
             }
-        }
-        if (autoAssignStackNetworkId) {
+        }else if (autoAssignStackNetworkId) {
             item.autoAssignStackNetworkId();
         }
         return item;
@@ -1255,12 +1254,19 @@ public abstract class Item implements Cloneable, ItemID {
         return equals(item, checkDamage, true);
     }
 
+    public boolean equalItemBlock(Item item) {
+        if (this.isBlock() && item.isBlock()) {
+            return  this.getBlockUnsafe().getBlockState() == item.getBlockUnsafe().getBlockState();
+        }
+        return true;
+    }
+
     public final boolean equals(Item item, boolean checkDamage, boolean checkCompound) {
         if (!Objects.equals(this.getId(), item.getId())) return false;
         if (checkDamage && this.hasMeta() && item.hasMeta() && this.getDamage() != item.getDamage()) {
             return false;
         }
-        if (checkDamage && (this.isBlock() || item.isBlock()) && this.getBlockUnsafe().getBlockState() != item.getBlockUnsafe().getBlockState()) {
+        if (checkDamage && !equalItemBlock(item)) {
             return false;
         }
         if (checkCompound && (this.hasCompoundTag() || item.hasCompoundTag())) {

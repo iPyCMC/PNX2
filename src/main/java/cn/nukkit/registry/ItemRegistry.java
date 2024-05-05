@@ -1,5 +1,6 @@
 package cn.nukkit.registry;
 
+import cn.nukkit.block.BlockID;
 import cn.nukkit.item.*;
 import cn.nukkit.item.customitem.CustomItem;
 import cn.nukkit.item.customitem.CustomItemDefinition;
@@ -482,9 +483,22 @@ public final class ItemRegistry implements ItemID, IRegistry<String, Item, Class
             register(ZOMBIE_PIGMAN_SPAWN_EGG, ItemZombiePigmanSpawnEgg.class);
             register(ZOMBIE_SPAWN_EGG, ItemZombieSpawnEgg.class);
             register(ZOMBIE_VILLAGER_SPAWN_EGG, ItemZombieVillagerSpawnEgg.class);
+            register(BlockID.BED, ItemBed.class);
+            register(BlockID.SKULL, ItemSkull.class);
 
-            register(BED, ItemBed.class);
-            register(SKULL, ItemSkull.class);
+            register(BlockID.BIRCH_HANGING_SIGN, ItemBirchHangingSign.class);
+            register(BlockID.ACACIA_HANGING_SIGN, ItemAcaciaHangingSign.class);
+            register(BlockID.BAMBOO_HANGING_SIGN, ItemBambooHangingSign.class);
+            register(BlockID.CHERRY_HANGING_SIGN, ItemCherryHangingSign.class);
+            register(BlockID.CRIMSON_HANGING_SIGN, ItemCrimsonHangingSign.class);
+            register(BlockID.DARK_OAK_HANGING_SIGN, ItemDarkOakHangingSign.class);
+            register(BlockID.JUNGLE_HANGING_SIGN, ItemJungleHangingSign.class);
+            register(BlockID.MANGROVE_HANGING_SIGN, ItemMangroveHangingSign.class);
+            register(BlockID.OAK_HANGING_SIGN, ItemOakHangingSign.class);
+            register(BlockID.SPRUCE_HANGING_SIGN, ItemSpruceHangingSign.class);
+            register(BlockID.WARPED_HANGING_SIGN, ItemWarpedHangingSign.class);
+
+            register(BlockID.BEETROOT, ItemBeetroot.class);
         } catch (RegisterException ignore) {
         }
     }

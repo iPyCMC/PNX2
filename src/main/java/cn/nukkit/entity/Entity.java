@@ -1,9 +1,16 @@
 package cn.nukkit.entity;
 
-import cn.nukkit.AdventureSettings;
 import cn.nukkit.Player;
 import cn.nukkit.Server;
-import cn.nukkit.block.*;
+import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockBubbleColumn;
+import cn.nukkit.block.BlockEndPortal;
+import cn.nukkit.block.BlockFence;
+import cn.nukkit.block.BlockFire;
+import cn.nukkit.block.BlockFlowingLava;
+import cn.nukkit.block.BlockFlowingWater;
+import cn.nukkit.block.BlockID;
+import cn.nukkit.block.BlockTurtleEgg;
 import cn.nukkit.blockentity.BlockEntityPistonArm;
 import cn.nukkit.entity.custom.CustomEntity;
 import cn.nukkit.entity.data.EntityDataMap;
@@ -33,7 +40,6 @@ import cn.nukkit.event.player.PlayerTeleportEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemTotemOfUndying;
 import cn.nukkit.item.enchantment.Enchantment;
-import cn.nukkit.level.EnumLevel;
 import cn.nukkit.level.GameRule;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Location;
@@ -46,7 +52,6 @@ import cn.nukkit.level.vibration.VibrationEvent;
 import cn.nukkit.level.vibration.VibrationType;
 import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.BlockFace;
-import cn.nukkit.math.BlockVector3;
 import cn.nukkit.math.MathHelper;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.math.SimpleAxisAlignedBB;
@@ -69,6 +74,7 @@ import cn.nukkit.scheduler.Task;
 import cn.nukkit.tags.ItemTags;
 import cn.nukkit.utils.ChunkException;
 import cn.nukkit.utils.Identifier;
+import cn.nukkit.utils.PortalHelper;
 import cn.nukkit.utils.TextFormat;
 import com.google.common.collect.Iterables;
 import org.jetbrains.annotations.NotNull;
@@ -80,7 +86,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiPredicate;
 
 /**
  * @author MagicDroidX
@@ -816,9 +821,16 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
                 z + radius
         );
 
-        this.getEntityDataMap().put(HEIGHT, entityHeight);
-        this.getEntityDataMap().put(WIDTH, this.getWidth());
-        if (send) {
+        boolean change = false;
+        if (this.getEntityDataMap().get(HEIGHT) != entityHeight) {
+            change = true;
+            this.getEntityDataMap().put(HEIGHT, entityHeight);
+        }
+        if (this.getEntityDataMap().get(WIDTH) != this.getWidth()) {
+            change = true;
+            this.getEntityDataMap().put(WIDTH, this.getWidth());
+        }
+        if (send && change) {
             sendData(this.hasSpawned.values().toArray(Player.EMPTY_ARRAY), this.entityDataMap.copy(WIDTH, HEIGHT));
         }
     }
@@ -1060,8 +1072,8 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
             }
             player.dataPacket(pk);
         }
-        if (this instanceof Player) {
-            ((Player) this).dataPacket(pk);
+        if (this instanceof Player player) {
+            player.dataPacket(pk);
         }
     }
 
@@ -1139,7 +1151,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
                 }
                 //复活图腾实现
                 if (totem) {
-                    this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_TOTEM);
+                    this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_TOTEM_USED);
                     this.getLevel().addParticleEffect(this, ParticleEffect.TOTEM);
 
                     this.extinguish();
@@ -1453,23 +1465,14 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
             }
         }
 
-        if (this.inPortalTicks == 80) {
+        if (this.inPortalTicks == 80) {//handle portal teleport
             EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, PortalType.NETHER);
-            getServer().getPluginManager().callEvent(ev);
+            getServer().getPluginManager().callEvent(ev);//call event
 
             if (!ev.isCancelled() && (level.getDimension() == Level.DIMENSION_OVERWORLD || level.getDimension() == Level.DIMENSION_NETHER)) {
-                Position newPos = EnumLevel.convertPosBetweenNetherAndOverworld(this);
+                Position newPos = PortalHelper.convertPosBetweenNetherAndOverworld(this);
                 if (newPos != null) {
-                    /*for (int x = -1; x < 2; x++) {
-                        for (int z = -1; z < 2; z++) {
-                            int chunkX = (newPos.getFloorX() >> 4) + x, chunkZ = (newPos.getFloorZ() >> 4) + z;
-                            FullChunk chunk = newPos.level.getChunk(chunkX, chunkZ, false);
-                            if (chunk == null || !(chunk.isGenerated() || chunk.isPopulated())) {
-                                newPos.level.generateChunk(chunkX, chunkZ, true);
-                            }
-                        }
-                    }*/
-                    Position nearestPortal = getNearestValidPortal(newPos);
+                    Position nearestPortal = PortalHelper.getNearestValidPortal(newPos);
                     if (nearestPortal != null) {
                         teleport(nearestPortal.add(0.5, 0, 0.5), PlayerTeleportEvent.TeleportCause.NETHER_PORTAL);
                     } else {
@@ -1482,7 +1485,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
                                     // player
                                     inPortalTicks = 81;
                                     teleport(finalPos, PlayerTeleportEvent.TeleportCause.NETHER_PORTAL);
-                                    BlockPortal.spawnPortal(newPos);
+                                    PortalHelper.spawnPortal(newPos);
                                 }
                             }, 5);
                         }
@@ -1495,32 +1498,6 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
 
         return hasUpdate;
     }
-
-    private Position getNearestValidPortal(Position currentPos) {
-        AxisAlignedBB axisAlignedBB = new SimpleAxisAlignedBB(
-                new Vector3(currentPos.getFloorX() - 128.0, currentPos.level.getDimension() == Level.DIMENSION_NETHER ? 0 : -64, currentPos.getFloorZ() - 128.0),
-                new Vector3(currentPos.getFloorX() + 128.0, currentPos.level.getDimension() == Level.DIMENSION_NETHER ? 128 : 320, currentPos.getFloorZ() + 128.0));
-        BiPredicate<BlockVector3, BlockState> condition = (pos, state) -> Objects.equals(state.getIdentifier(), BlockID.PORTAL);
-        List<Block> blocks = currentPos.level.scanBlocks(axisAlignedBB, condition);
-
-        if (blocks.isEmpty()) {
-            return null;
-        }
-
-        final Vector2 currentPosV2 = new Vector2(currentPos.getFloorX(), currentPos.getFloorZ());
-        final double by = currentPos.getFloorY();
-        Comparator<Block> euclideanDistance = Comparator.comparingDouble(block -> currentPosV2.distanceSquared(block.getFloorX(), block.getFloorZ()));
-        Comparator<Block> heightDistance = Comparator.comparingDouble(block -> {
-            double ey = by - block.y;
-            return ey * ey;
-        });
-
-        return blocks.stream()
-                .filter(block -> !block.down().getId().equals(BlockID.PORTAL))
-                .min(euclideanDistance.thenComparing(heightDistance))
-                .orElse(null);
-    }
-
 
     public void updateMovement() {
         //这样做是为了向后兼容旧插件
@@ -1884,7 +1861,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
 
         if ((!this.isPlayer || level.getGameRules().getBoolean(GameRule.FALL_DAMAGE)) && down.useDefaultFallDamage()) {
             int jumpBoost = this.hasEffect(EffectType.JUMP_BOOST) ? this.getEffect(EffectType.JUMP_BOOST).getLevel() : 0;
-            float damage = fallDistance - 3 - jumpBoost;
+            float damage = fallDistance - 3.255f - jumpBoost;
 
             if (damage > 0) {
                 if (!this.isSneaking()) {
@@ -2150,36 +2127,6 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
         return Block.LADDER.equals(b.getId());
     }
 
-    public boolean fastMove(double dx, double dy, double dz) {
-        if (dx == 0 && dy == 0 && dz == 0) {
-            return true;
-        }
-
-        AxisAlignedBB newBB = this.boundingBox.getOffsetBoundingBox(dx, dy, dz);
-
-        if (server.getAllowFlight()
-                || isPlayer && ((Player) this).getAdventureSettings().get(AdventureSettings.Type.NO_CLIP)
-                || !this.level.hasCollision(this, newBB, false)) {
-            this.boundingBox = newBB;
-        }
-
-        this.x = (this.boundingBox.getMinX() + this.boundingBox.getMaxX()) / 2;
-        this.y = this.boundingBox.getMinY() - this.ySize;
-        this.z = (this.boundingBox.getMinZ() + this.boundingBox.getMaxZ()) / 2;
-
-        this.checkChunks();
-
-        if ((!this.onGround || dy != 0) && !this.noClip) {
-            AxisAlignedBB bb = this.boundingBox.clone();
-            bb.setMinY(bb.getMinY() - 0.75);
-
-            this.onGround = this.level.getCollisionBlocks(bb).length > 0;
-        }
-        this.isCollided = this.onGround;
-        this.updateFallState(this.onGround);
-        return true;
-    }
-
     //Player do not use
     public boolean move(double dx, double dy, double dz) {
         if (dx == 0 && dz == 0 && dy == 0) {
@@ -2194,7 +2141,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
             return true;
         } else {
 
-            this.ySize *= 0.4;
+            this.ySize *= 0.4F;
 
             double movX = dx;
             double movY = dy;
@@ -2264,7 +2211,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
                     dz = cz;
                     this.boundingBox.setBB(axisalignedbb1);
                 } else {
-                    this.ySize += 0.5;
+                    this.ySize += 0.5F;
                 }
 
             }
@@ -2443,15 +2390,15 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
             }
         }
 
-        if (endPortal) {
+        if (endPortal) {//handle endPortal teleport
             if (!inEndPortal) {
                 inEndPortal = true;
                 if (this.getRiding() == null && this.getPassengers().isEmpty() && !(this instanceof EntityEnderDragon)) {
                     EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, PortalType.END);
                     getServer().getPluginManager().callEvent(ev);
 
-                    if (!ev.isCancelled() && (level == EnumLevel.OVERWORLD.getLevel() || level == EnumLevel.THE_END.getLevel())) {
-                        final Position newPos = EnumLevel.moveToTheEnd(this);
+                    if (!ev.isCancelled() && (level.getDimension() == Level.DIMENSION_OVERWORLD || level.getDimension() == Level.DIMENSION_THE_END)) {
+                        final Position newPos = PortalHelper.moveToTheEnd(this);
                         if (newPos != null) {
                             if (newPos.getLevel().getDimension() == Level.DIMENSION_THE_END) {
                                 if (teleport(newPos.add(0.5, 1, 0.5), PlayerTeleportEvent.TeleportCause.END_PORTAL)) {
