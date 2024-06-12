@@ -9,13 +9,14 @@ import cn.nukkit.network.process.SessionState;
 import cn.nukkit.network.protocol.LoginPacket;
 import cn.nukkit.network.protocol.PlayStatusPacket;
 import cn.nukkit.network.protocol.ServerToClientHandshakePacket;
-import cn.nukkit.player.info.PlayerInfo;
-import cn.nukkit.player.info.XboxLivePlayerInfo;
+import cn.nukkit.network.protocol.types.PlayerInfo;
+import cn.nukkit.network.protocol.types.XboxLivePlayerInfo;
 import cn.nukkit.utils.ClientChainData;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -64,10 +65,10 @@ public class LoginHandler extends BedrockSessionPacketHandler {
         }
 
         //set proxy ip
-        if (server.isWaterdogCapable() && chainData.getWaterdogIP() != null) {
+        if (server.getSettings().baseSettings().waterdogpe() && chainData.getWaterdogIP() != null) {
             InetSocketAddress oldAddress = session.getAddress();
             session.setAddress(new InetSocketAddress(chainData.getWaterdogIP(), session.getAddress().getPort()));
-            Server.getInstance().getNetwork().replaceSession(oldAddress, session.getAddress(), session);
+            Server.getInstance().getNetwork().replaceSessionAddress(oldAddress, session.getAddress(), session);
         }
 
         var uniqueId = pk.clientUUID;
@@ -89,7 +90,7 @@ public class LoginHandler extends BedrockSessionPacketHandler {
         }
 
         Skin skin = pk.skin;
-        if (server.isForceSkinTrusted()) {
+        if (server.getSettings().playerSettings().forceSkinTrusted()) {
             skin.setTrusted(true);
         }
 
@@ -112,13 +113,13 @@ public class LoginHandler extends BedrockSessionPacketHandler {
 
         this.consumer.accept(info);
 
-        if (!server.isWhitelisted((info.getUsername()).toLowerCase())) {
+        if (!server.isWhitelisted((info.getUsername()).toLowerCase(Locale.ENGLISH))) {
             log.debug("disconnection due to white-listed");
             session.close("Server is white-listed");
             return;
         }
 
-        var entry = server.getNameBans().getEntires().get(info.getUsername().toLowerCase());
+        var entry = server.getNameBans().getEntires().get(info.getUsername().toLowerCase(Locale.ENGLISH));
         if (entry != null) {
             String reason = entry.getReason();
             log.debug("disconnection due to named ban");

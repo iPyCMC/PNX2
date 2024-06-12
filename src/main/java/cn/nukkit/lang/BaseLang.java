@@ -1,6 +1,7 @@
 package cn.nukkit.lang;
 
-import com.google.gson.Gson;
+import cn.nukkit.utils.JSONUtils;
+import com.google.gson.reflect.TypeToken;
 import io.netty.util.internal.EmptyArrays;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -56,7 +58,7 @@ public class BaseLang {
     }
 
     public BaseLang(String lang, String path, String fallback) {
-        this.langName = lang.toLowerCase();
+        this.langName = lang.toLowerCase(Locale.ENGLISH);
         boolean useFallback = !lang.equals(fallback);
 
         if (path == null) {
@@ -117,9 +119,8 @@ public class BaseLang {
     }
 
     private Map<String, String> parseLang(BufferedReader reader) throws IOException {
-        Map<String, String> d = new HashMap<>();
-        d.putAll((Map<String, String>) new Gson().fromJson(reader, Map.class));
-        return d;
+        return JSONUtils.from(reader, new TypeToken<Map<String, String>>() {
+        });
     }
 
     /**

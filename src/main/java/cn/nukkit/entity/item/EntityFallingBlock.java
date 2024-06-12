@@ -1,6 +1,12 @@
 package cn.nukkit.entity.item;
 
-import cn.nukkit.block.*;
+import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockAir;
+import cn.nukkit.block.BlockAnvil;
+import cn.nukkit.block.BlockFlowingLava;
+import cn.nukkit.block.BlockID;
+import cn.nukkit.block.BlockLiquid;
+import cn.nukkit.block.BlockState;
 import cn.nukkit.block.property.CommonBlockProperties;
 import cn.nukkit.block.property.enums.Damage;
 import cn.nukkit.entity.Entity;
@@ -10,7 +16,6 @@ import cn.nukkit.event.entity.EntityBlockChangeEvent;
 import cn.nukkit.event.entity.EntityDamageByBlockEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.EntityDamageEvent.DamageCause;
-import cn.nukkit.item.Item;
 import cn.nukkit.level.GameRule;
 import cn.nukkit.level.format.IChunk;
 import cn.nukkit.level.particle.DestroyBlockParticle;
@@ -21,10 +26,14 @@ import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelEventPacket;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
- * @author MagicDroidX
+ * @author MagicDroidX | CoolLoong
  */
 public class EntityFallingBlock extends Entity {
+    private static final int sandAliveTick = 600;
+
     @Override
     @NotNull
     public String getIdentifier() {
@@ -34,6 +43,7 @@ public class EntityFallingBlock extends Entity {
     protected BlockState blockState;
     protected boolean breakOnLava;
     protected boolean breakOnGround;
+    protected int aliveTick = 0;
 
     public EntityFallingBlock(IChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -71,7 +81,7 @@ public class EntityFallingBlock extends Entity {
 
     @Override
     public boolean canCollide() {
-        return blockState.getIdentifier() == BlockID.ANVIL;
+        return Objects.equals(blockState.getIdentifier(), BlockID.ANVIL);
     }
 
     @Override
@@ -98,7 +108,7 @@ public class EntityFallingBlock extends Entity {
 
     @Override
     public boolean canCollideWith(Entity entity) {
-        return blockState.getIdentifier() == BlockID.ANVIL;
+        return Objects.equals(blockState.getIdentifier(), BlockID.ANVIL);
     }
 
     @Override
@@ -122,6 +132,20 @@ public class EntityFallingBlock extends Entity {
         boolean hasUpdate = entityBaseTick(tickDiff);
 
         if (isAlive()) {
+            String b = blockState.getIdentifier();
+            if ((b.equals(BlockID.SAND) ||
+                    b.equals(BlockID.GRAVEL) ||
+                    b.equals(BlockID.ANVIL)
+            )) {
+                aliveTick++;
+                if (aliveTick > sandAliveTick) {
+                    aliveTick = 0;
+                    level.addParticle(new DestroyBlockParticle(this, blockState.toBlock()));
+                    this.close();
+                    dropItems();
+                }
+            }
+
             motionY -= getGravity();
 
             move(motionX, motionY, motionZ);
@@ -184,13 +208,14 @@ public class EntityFallingBlock extends Entity {
                     server.getPluginManager().callEvent(event);
                     if (!event.isCancelled()) {
                         Block eventTo = event.getTo();
-                        if (!breakOnGround)
-                            getLevel().setBlock(pos, eventTo, true);
-                        else {
+
+                        if (breakOnGround) {
                             if (this.level.getGameRules().getBoolean(GameRule.DO_ENTITY_DROPS)) {
                                 dropItems();
                             }
                             level.addParticle(new DestroyBlockParticle(pos, Block.get(blockState)));
+                        } else {
+                            getLevel().setBlock(pos, eventTo, true);
                         }
 
                         if (eventTo.getId().equals(Block.ANVIL)) {
@@ -245,7 +270,7 @@ public class EntityFallingBlock extends Entity {
 
     @Override
     public boolean canBeMovedByCurrents() {
-        return false;
+        return !onGround && !this.blockState.getIdentifier().equals(BlockID.DRIPSTONE_BLOCK);
     }
 
     @Override
@@ -255,14 +280,12 @@ public class EntityFallingBlock extends Entity {
         }
     }
 
+    private void dropItems() {
+        getLevel().dropItem(this, blockState.toItem());
+    }
+
     @Override
     public String getOriginalName() {
         return "Falling Block";
-    }
-
-    private void dropItems() {
-        for (var i : Block.get(blockState).getDrops(Item.AIR)) {
-            getLevel().dropItem(this, i);
-        }
     }
 }

@@ -21,10 +21,10 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 repositories {
     mavenLocal()
     mavenCentral()
-    maven("https://repo.maven.apache.org/maven2/")
     maven("https://jitpack.io")
     maven("https://repo.opencollab.dev/maven-releases/")
     maven("https://repo.opencollab.dev/maven-snapshots/")
+    maven("https://storehouse.okaeri.eu/repository/maven-public/")
 }
 
 dependencies {
@@ -40,9 +40,6 @@ dependencies {
     api(libs.snakeyaml)
     api(libs.stateless4j)
 
-    compileOnly(libs.lombok)
-    annotationProcessor(libs.lombok)
-
     implementation(libs.rng.simple)
     implementation(libs.rng.sampling)
     implementation(libs.asm)
@@ -57,10 +54,14 @@ dependencies {
     implementation(libs.bundles.compress)
     implementation(libs.bundles.terminal)
     implementation(libs.graalvm.polyglot)
+    implementation(libs.okaeri)
     runtimeOnly(libs.bundles.graalvm.runtime)
     testImplementation(libs.bundles.test)
     testImplementation(libs.commonsio)
     testImplementation(libs.commonslang3)
+
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
     testCompileOnly(libs.lombok)
     testAnnotationProcessor(libs.lombok)
 }
@@ -149,8 +150,8 @@ tasks.test {
 
 tasks.jacocoTestReport {
     reports {
-        csv.required = true
-        xml.required = false
+        csv.required = false
+        xml.required = true
         html.required = false
     }
     dependsOn(tasks.test) // tests are required to run before generating the report
