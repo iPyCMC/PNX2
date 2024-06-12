@@ -20,7 +20,6 @@ import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.ListTag;
-import cn.nukkit.recipe.RecipeInventoryHolder;
 import cn.nukkit.utils.Faceable;
 import cn.nukkit.utils.RedstoneComponent;
 import org.jetbrains.annotations.NotNull;
@@ -91,7 +90,7 @@ public class BlockHopper extends BlockTransparent implements RedstoneComponent, 
 
         setBlockFace(facing);
 
-        if (this.level.getServer().isRedstoneEnabled()) {
+        if (this.level.getServer().getSettings().levelSettings().enableRedstone()) {
             boolean powered = this.isGettingPower();
 
             if (powered == this.isEnabled()) {
@@ -143,7 +142,7 @@ public class BlockHopper extends BlockTransparent implements RedstoneComponent, 
 
     @Override
     public int onUpdate(int type) {
-        if (!this.level.getServer().isRedstoneEnabled()) {
+        if (!this.level.getServer().getSettings().levelSettings().enableRedstone()) {
             return 0;
         }
 
@@ -210,8 +209,8 @@ public class BlockHopper extends BlockTransparent implements RedstoneComponent, 
             Block blockSide = hopperPos.getSide(BlockFace.UP).getTickCachedLevelBlock();
             BlockEntity blockEntity = hopperPos.level.getBlockEntity(new Vector3().setComponentsAdding(hopperPos, BlockFace.UP));
 
-            if (blockEntity instanceof InventoryHolder) {
-                Inventory inv = blockEntity instanceof RecipeInventoryHolder recipeInventoryHolder ? recipeInventoryHolder.getProductView() : ((InventoryHolder) blockEntity).getInventory();
+            if (blockEntity instanceof InventoryHolder holder) {
+                Inventory inv = holder instanceof cn.nukkit.inventory.RecipeInventoryHolder recipeInventoryHolder ? recipeInventoryHolder.getProductView() : holder.getInventory();
 
                 for (int i = 0; i < inv.getSize(); i++) {
                     Item item = inv.getItem(i);

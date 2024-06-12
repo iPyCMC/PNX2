@@ -2,7 +2,6 @@ package cn.nukkit;
 
 import cn.nukkit.nbt.stream.PGZIPOutputStream;
 import cn.nukkit.plugin.js.JSIInitiator;
-import cn.nukkit.utils.ServerKiller;
 import com.google.common.base.Preconditions;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -17,11 +16,19 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static cn.nukkit.utils.Utils.dynamic;
@@ -159,7 +166,7 @@ public class Nukkit {
         }
         log.info("Stopping other threads");
 
-        // 停止JS定时器
+        // cancel JSTimer
         JSIInitiator.jsTimer.cancel();
         // 强制关闭PGZIPOutputStream中的线程池
         PGZIPOutputStream.getSharedThreadPool().shutdownNow();
@@ -173,17 +180,16 @@ public class Nukkit {
             }
         }
 
-        ServerKiller killer = new ServerKiller(8);
-        killer.start();
         if (TITLE) {
             System.out.print((char) 0x1b + "]0;Server Stopped" + (char) 0x07);
         }
-        System.exit(0);
+        LogManager.shutdown();
+        Runtime.getRuntime().halt(0); // force exit
     }
 
     private static boolean requiresShortTitle() {
         //Shorter title for windows 8/2012
-        String osName = System.getProperty("os.name").toLowerCase();
+        String osName = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
         return osName.contains("windows") && (osName.contains("windows 8") || osName.contains("2012"));
     }
 

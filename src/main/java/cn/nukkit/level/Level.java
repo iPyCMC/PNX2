@@ -87,6 +87,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -146,6 +147,7 @@ public class Level implements Metadatable {
     private static int levelIdCounter = 1;
     private static int chunkLoaderCounter = 1;
     // endregion finals - number finals
+
     private static final Set<String> randomTickBlocks = new HashSet<>(64);  // The blocks that can randomly tick
     private static final Entity[] ENTITY_BUFFER = new Entity[512];
 
@@ -301,10 +303,6 @@ public class Level implements Metadatable {
     private final Class<? extends Generator> generatorClass;
     private int updateLCG = ThreadLocalRandom.current().nextInt();
     private int tickRate;
-    private boolean raining = false;
-    private int rainTime = 0;
-    private boolean thundering = false;
-    private int thunderTime = 0;
     private long levelCurrentTick = 0;
     private final Map<Long, Map<Integer, Object>> lightQueue = new ConcurrentHashMap<>(8, 0.9f, 1);
     private final int dimensionCount;
@@ -312,10 +310,14 @@ public class Level implements Metadatable {
     ///sub tick system
     private final Thread subTickThread;
     private final GameLoop gameLoop;
-    ///
-
     ///antiXray system
     private AntiXraySystem antiXraySystem;
+    ///weather system
+    private boolean raining = false;
+    private int rainTime = 0;
+    private boolean thundering = false;
+    private int thunderTime = 0;
+    private Object2IntOpenHashMap<String> playerWeatherShowMap = new Object2IntOpenHashMap<String>();
     ///
 
     public Level(Server server, String name, String path, int dimSum, Class<? extends LevelProvider> provider, LevelConfig.GeneratorConfig generatorConfig) {
@@ -378,12 +380,11 @@ public class Level implements Metadatable {
         this.levelCurrentTick = levelProvider.getCurrentTick();
         this.updateQueue = new BlockUpdateScheduler(this, levelCurrentTick);
 
-        this.chunkTickRadius = Math.min(this.server.getViewDistance(),
-                Math.max(1, this.server.getConfig("chunk-ticking.tick-radius", 4)));
-        this.chunkGenerationQueueSize = this.server.getConfig("chunk-generation.queue-size", 8);
-        this.chunksPerTicks = this.server.getConfig("chunk-ticking.per-tick", 40);
+        this.chunkTickRadius = Math.min(this.server.getViewDistance(), Math.max(1, this.server.getSettings().chunkSettings().tickRadius()));
+        this.chunkGenerationQueueSize = this.server.getSettings().chunkSettings().generationQueueSize();
+        this.chunksPerTicks = this.server.getSettings().chunkSettings().chunksPerTicks();
+        this.clearChunksOnTick = this.server.getSettings().chunkSettings().clearTickList();
         this.chunkTickList.clear();
-        this.clearChunksOnTick = this.server.getConfig("chunk-ticking.clear-tick-list", true);
         this.temporalVector = new Vector3(0, 0, 0);
         this.tickRate = 1;
 
@@ -521,7 +522,9 @@ public class Level implements Metadatable {
         this.gameRules = this.requireProvider().getGamerules();
         log.info("Preparing start region for level \"{}\"", this.getName());
         Position spawn = this.getSpawnLocation();
-        this.generateChunk(spawn.getChunkX(), spawn.getChunkZ());
+        if (!getChunk(spawn.getChunkX(), spawn.getChunkZ(), true).getChunkState().canSend()) {
+            this.generateChunk(spawn.getChunkX(), spawn.getChunkZ());
+        }
     }
 
     public Generator getGenerator() {
@@ -712,6 +715,10 @@ public class Level implements Metadatable {
         this.addParticle(particle, new Player[]{player});
     }
 
+    public void addParticle(Particle particle, Collection<Player> players) {
+        this.addParticle(particle, players.toArray(Player.EMPTY_ARRAY));
+    }
+
     public void addParticle(Particle particle, Player[] players) {
         DataPacket[] packets = particle.encode();
 
@@ -728,10 +735,6 @@ public class Level implements Metadatable {
                 }
             }
         }
-    }
-
-    public void addParticle(Particle particle, Collection<Player> players) {
-        this.addParticle(particle, players.toArray(Player.EMPTY_ARRAY));
     }
 
     public void addParticleEffect(Vector3 pos, ParticleEffect particleEffect) {
@@ -957,37 +960,7 @@ public class Level implements Metadatable {
                 }
             }
 
-            // Tick Weather
-            if (this.getDimension() != DIMENSION_NETHER && this.getDimension() != DIMENSION_THE_END && gameRules.getBoolean(GameRule.DO_WEATHER_CYCLE)) {
-                this.rainTime--;
-                if (this.rainTime <= 0) {
-                    if (!this.setRaining(!this.raining)) {//if raining,set false
-                        setRaining(!raining);// and if event cancel,revert raining change
-                    }
-                }
-
-                this.thunderTime--;
-                if (this.thunderTime <= 0) {
-                    if (!this.setThundering(!this.thundering)) {
-                        setThundering(!thundering);
-                    }
-                }
-
-                if (this.isThundering()) {
-                    Map<Long, IChunk> chunks = getChunks();
-                    if (chunks instanceof Long2ObjectOpenHashMap<IChunk> fastChunks) {
-                        ObjectIterator<? extends Long2ObjectMap.Entry<IChunk>> iter = fastChunks.long2ObjectEntrySet().fastIterator();
-                        while (iter.hasNext()) {
-                            Long2ObjectMap.Entry<IChunk> entry = iter.next();
-                            performThunder(entry.getLongKey(), entry.getValue());
-                        }
-                    } else {
-                        for (Map.Entry<Long, IChunk> entry : getChunks().entrySet()) {
-                            performThunder(entry.getKey(), entry.getValue());
-                        }
-                    }
-                }
-            }
+            checkWeather();
 
             this.skyLightSubtracted = this.calculateSkylightSubtracted(1);
 
@@ -1105,6 +1078,75 @@ public class Level implements Metadatable {
         }
     }
 
+    private void checkWeather() {
+        if (gameRules.getBoolean(GameRule.DO_WEATHER_CYCLE)) {
+            for (var entry : playerWeatherShowMap.object2IntEntrySet()) {
+                int intValue = entry.getIntValue();
+                String key = entry.getKey();
+                if (intValue == 0) {
+                    Player player = server.getPlayer(key);
+                    if (player != null) {
+                        if (isRaining()) {
+                            LevelEventPacket pk = new LevelEventPacket();
+                            pk.evid = LevelEventPacket.EVENT_START_RAINING;
+                            pk.data = rainTime;
+                            player.dataPacket(pk);
+                            this.playerWeatherShowMap.put(key, 1);
+                            if (isThundering()) {
+                                LevelEventPacket pk2 = new LevelEventPacket();
+                                pk2.evid = LevelEventPacket.EVENT_START_THUNDERSTORM;
+                                pk2.data = thunderTime;
+                                player.dataPacket(pk);
+                                this.playerWeatherShowMap.put(key, 2);
+                            }
+                        }
+                    }
+                }
+            }
+            // Tick Weather
+            if (this.getDimension() != DIMENSION_NETHER && this.getDimension() != DIMENSION_THE_END) {
+                this.rainTime--;
+                if (this.rainTime <= 0) {
+                    if (!this.setRaining(!this.raining)) {//if raining,set false
+                        setRaining(!raining);// and if event cancel,revert raining change
+                    }
+                }
+
+                this.thunderTime--;
+                if (this.thunderTime <= 0) {
+                    if (!this.setThundering(!this.thundering)) {
+                        setThundering(!thundering);
+                    }
+                }
+
+                if (this.isThundering()) {
+                    final Map<Long, IChunk> chunks = getChunks();
+                    if (chunks instanceof Long2ObjectOpenHashMap<IChunk> fastChunks) {
+                        final ObjectIterator<? extends Long2ObjectMap.Entry<IChunk>> iter = fastChunks.long2ObjectEntrySet().fastIterator();
+                        while (iter.hasNext()) {
+                            Long2ObjectMap.Entry<IChunk> entry = iter.next();
+                            performThunder(entry.getLongKey(), entry.getValue());
+                        }
+                    } else {
+                        for (Map.Entry<Long, IChunk> entry : getChunks().entrySet()) {
+                            performThunder(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+            }
+        } else {
+            if (isRaining()) {
+                setRaining(false);
+            }
+            if (isThundering()) {
+                setThundering(false);
+            }
+        }
+    }
+
+    /**
+     * Spawn lightning when thunder
+     */
     private void performThunder(long index, IChunk chunk) {
         if (areNeighboringChunksLoaded(index)) return;
         if (ThreadLocalRandom.current().nextInt(100000) == 0) {
@@ -1277,12 +1319,7 @@ public class Level implements Metadatable {
                 }
                 runtimeId = hash;
             }
-            try {
-                updateBlockPacket.blockRuntimeId = runtimeId;
-            } catch (NoSuchElementException e) {
-                throw new IllegalStateException("Unable to create BlockUpdatePacket at (" +
-                        b.x + ", " + b.y + ", " + b.z + ") in " + getName(), e);
-            }
+            updateBlockPacket.blockRuntimeId = runtimeId;
             packets.add(updateBlockPacket);
         }
         for (var p : packets) {
@@ -2220,7 +2257,8 @@ public class Level implements Metadatable {
         }
 
         if (update) {
-            if (Server.getInstance().getConfig("chunk-ticking.light-updates", true)) {
+
+            if (server.getSettings().chunkSettings().lightUpdates()) {
                 updateAllLight(block);
             }
 
@@ -3033,7 +3071,7 @@ public class Level implements Metadatable {
         chunk.setBlockState(x & 0x0f, ensureY(y), z & 0x0f, state, layer);
         addBlockChange(x, y, z);
         temporalVector.setComponents(x, y, z);
-        if (Server.getInstance().getConfig("chunk-ticking.light-updates", true)) {
+        if (server.getSettings().chunkSettings().lightUpdates()) {
             updateAllLight(new Vector3(x, y, z));
         }
     }
@@ -3078,7 +3116,7 @@ public class Level implements Metadatable {
         return this.getChunk(x >> 4, z >> 4, true).getBiomeId(x & 0x0f, y, z & 0x0f);
     }
 
-    public void setBiomeId(int x, int y, int z, byte biomeId) {
+    public void setBiomeId(int x, int y, int z, int biomeId) {
         this.getChunk(x >> 4, z >> 4, true).setBiomeId(x & 0x0f, y, z & 0x0f, biomeId);
     }
 
@@ -3377,8 +3415,9 @@ public class Level implements Metadatable {
             throw new LevelException("Invalid Entity level");
         }
 
-        if (entity instanceof Player) {
+        if (entity instanceof Player p) {
             this.players.remove(entity.getId());
+            this.playerWeatherShowMap.removeInt(p.getName());
             this.checkSleep();
         } else {
             entity.close();
@@ -3393,8 +3432,9 @@ public class Level implements Metadatable {
             throw new LevelException("Invalid Entity level");
         }
 
-        if (entity instanceof Player) {
-            this.players.put(entity.getId(), (Player) entity);
+        if (entity instanceof Player p) {
+            this.players.put(entity.getId(), p);
+            this.playerWeatherShowMap.put(p.getName(), 0);
         }
         this.entities.put(entity.getId(), entity);
     }
@@ -3886,7 +3926,7 @@ public class Level implements Metadatable {
                     long time = entry.getValue();
                     if (maxUnload <= 0) {
                         break;
-                    } else if (time > (now - Server.getInstance().getChunkUnloadDelay())) {
+                    } else if (time > (now - Server.getInstance().getSettings().levelSettings().chunkUnloadDelay())) {
                         continue;
                     }
                 }
@@ -4015,11 +4055,9 @@ public class Level implements Metadatable {
         this.raining = raining;
 
         LevelEventPacket pk = new LevelEventPacket();
-        // These numbers are from Minecraft
-
         if (raining) {
             pk.evid = LevelEventPacket.EVENT_START_RAINING;
-            int time = ThreadLocalRandom.current().nextInt(12000) + 12000;
+            int time = ThreadLocalRandom.current().nextInt(12000) + 12000;// These numbers are from Minecraft
             pk.data = time;
             setRainTime(time);
         } else {
@@ -4027,7 +4065,10 @@ public class Level implements Metadatable {
             setRainTime(ThreadLocalRandom.current().nextInt(168000) + 12000);
         }
 
-        Server.broadcastPacket(this.getPlayers().values(), pk);
+        for (var p : this.getPlayers().values()) {
+            this.playerWeatherShowMap.put(p.getName(), raining ? 1 : 0);
+            p.dataPacket(pk);
+        }
 
         return true;
     }
@@ -4035,6 +4076,7 @@ public class Level implements Metadatable {
     public int getRainTime() {
         return this.rainTime;
     }
+
 
     public void setRainTime(int rainTime) {
         this.rainTime = rainTime;
@@ -4070,7 +4112,10 @@ public class Level implements Metadatable {
             setThunderTime(ThreadLocalRandom.current().nextInt(168000) + 12000);
         }
 
-        Server.broadcastPacket(this.getPlayers().values(), pk);
+        for (var p : this.getPlayers().values()) {
+            this.playerWeatherShowMap.put(p.getName(), raining ? 2 : 0);
+            p.dataPacket(pk);
+        }
 
         return true;
     }
