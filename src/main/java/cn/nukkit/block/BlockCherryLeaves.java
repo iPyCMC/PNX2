@@ -45,9 +45,4 @@ public class BlockCherryLeaves extends BlockLeaves {
     public Item toSapling() {
         return Item.get(CHERRY_SAPLING);
     }
-
-    @Override
-    public Item toSapling() {
-        return Item.get(CHERRY_SAPLING);
-    }
 }

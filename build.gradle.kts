@@ -21,6 +21,7 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 repositories {
     mavenLocal()
     mavenCentral()
+    maven("https://repo.maven.apache.org/maven2/")
     maven("https://jitpack.io")
     maven("https://repo.opencollab.dev/maven-releases/")
     maven("https://repo.opencollab.dev/maven-snapshots/")

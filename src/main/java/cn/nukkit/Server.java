@@ -399,12 +399,11 @@ public class Server {
 
         this.eduEnabled = this.properties.getBoolean("edu-enabled", false);
 
-        if (this.isWaterdogCapable()) {
+        if (this.getSettings().baseSettings().waterdogpe()) {
             this.checkLoginTime = false;
         }
 
-        this.forceLanguage = this.getConfig("settings.force-language", false);
-        var langName = this.getConfig("settings.language", BaseLang.FALLBACK_LANGUAGE);
+        var langName = this.getSettings().baseSettings().language();
         this.baseLang = new BaseLang(langName);
         this.baseLangCode = mapInternalLang(langName);
 
@@ -442,18 +441,11 @@ public class Server {
 
         ZlibChooser.setProvider(settings.networkSettings().zlibProvider());
 
-        this.networkCompressionLevel = this.getConfig("network.compression-level", 7);
-        this.networkCompressionAsync = this.getConfig("network.async-compression", true);
 
-        this.autoTickRate = this.getConfig("level-settings.auto-tick-rate", true);
-        this.autoTickRateLimit = this.getConfig("level-settings.auto-tick-rate-limit", 20);
-        this.alwaysTickPlayers = this.getConfig("level-settings.always-tick-players", false);
-        this.baseTickRate = this.getConfig("level-settings.base-tick-rate", 1);
-        this.redstoneEnabled = this.getConfig("level-settings.tick-redstone", true);
-        this.chunkUnloadDelay = this.getConfig("level-settings.chunk-unload-delay", 15000);
-        this.safeSpawn = this.getConfig().getBoolean("settings.safe-spawn", true);
-        this.forceSkinTrusted = this.getConfig().getBoolean("player.force-skin-trusted", false);
-        this.checkMovement = this.getConfig().getBoolean("player.check-movement", true);
+        this.redstoneEnabled = this.getSettings().levelSettings().enableRedstone();
+        this.safeSpawn = this.getSettings().baseSettings().safeSpawn();
+        this.forceSkinTrusted = this.getSettings().playerSettings().forceSkinTrusted();
+        this.checkMovement = this.getSettings().playerSettings().checkMovement();
         this.serverAuthoritativeMovementMode = switch (this.properties.get("server-authoritative-movement", "server-auth")) {
             case "client-auth" -> 0;
             case "server-auth" -> 1;
