@@ -209,7 +209,7 @@ public class Server {
     private final String pluginPath;
     private final Set<UUID> uniquePlayers = new HashSet<>();
     private final Config properties;
-    private final Map<InetSocketAddress, Player> players = new ConcurrentHashMap<>();
+    public final Map<InetSocketAddress, Player> players = new ConcurrentHashMap<>();
     private final Map<UUID, Player> playerList = new ConcurrentHashMap<>();
     private QueryRegenerateEvent queryRegenerateEvent;
     private PositionTrackingService positionTrackingService;
