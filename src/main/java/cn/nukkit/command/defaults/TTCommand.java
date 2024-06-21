@@ -8,9 +8,8 @@ import cn.nukkit.command.tree.ParamList;
 import cn.nukkit.command.tree.node.PlayersNode;
 import cn.nukkit.command.utils.CommandLogger;
 import cn.nukkit.inventory.fake.FakeStructBlock;
-import cn.nukkit.network.protocol.ContainerClosePacket;
+import cn.nukkit.item.Item;
 
-import java.util.List;
 import java.util.Map;
 
 
@@ -33,16 +32,14 @@ public class TTCommand extends TestCommand {
         String s = value.getResult(0);
 
         if (sender.isOp()) {
-            Player player = sender.asPlayer();
+            Player p = sender.asPlayer();
             switch (s) {
                 case "get" -> {
+                    Item itemInHand = p.getInventory().getItemInHand();
+                    itemInHand.setDamage(0);
+                    p.getInventory().setItemInHand(itemInHand);
                 }
                 case "set" -> {
-                    List<Player> player1 = value.getResult(1);
-                    ContainerClosePacket pk = new ContainerClosePacket();
-                    pk.windowId = 0;
-                    pk.wasServerInitiated = true;
-                    player1.get(0).dataPacket(pk);
                 }
             }
             return 1;

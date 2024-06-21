@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import lombok.extern.slf4j.Slf4j;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.WriteBatch;
 
@@ -44,7 +43,6 @@ import java.util.List;
  *
  * @author Cool_Loong
  */
-@Slf4j
 public class LevelDBChunkSerializer {
     public static final LevelDBChunkSerializer INSTANCE = new LevelDBChunkSerializer();
 
@@ -82,7 +80,9 @@ public class LevelDBChunkSerializer {
         if (finalized == null) {
             builder.state(ChunkState.FINISHED);
         } else {
-            builder.state(ChunkState.values()[Unpooled.wrappedBuffer(finalized).readIntLE() + 1]);
+            ByteBuf byteBuf = Unpooled.wrappedBuffer(finalized);
+            final int i = byteBuf.readableBytes() >= 4 ? byteBuf.readIntLE() : byteBuf.readByte();
+            builder.state(ChunkState.values()[i + 1]);
         }
         byte[] extraData = db.get(LevelDBKeyUtil.PNX_EXTRA_DATA.getKey(builder.getChunkX(), builder.getChunkZ(), builder.getDimensionData()));
         CompoundTag pnxExtraData = null;
@@ -196,7 +196,6 @@ public class LevelDBChunkSerializer {
                                 section.blockLayer()[layer].readFromStoragePersistent(byteBuf, hash -> {
                                     BlockState blockState = Registries.BLOCKSTATE.get(hash);
                                     if (blockState == null) {
-                                        log.error("missing block hash: " + hash);
                                         return BlockUnknown.PROPERTIES.getDefaultState();
                                     }
                                     return blockState;

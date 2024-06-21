@@ -3,11 +3,14 @@ package cn.nukkit.block;
 import cn.nukkit.Player;
 import cn.nukkit.event.block.ComposterEmptyEvent;
 import cn.nukkit.event.block.ComposterFillEvent;
-import cn.nukkit.item.*;
+import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemBlock;
+import cn.nukkit.item.ItemBoneMeal;
+import cn.nukkit.item.ItemID;
+import cn.nukkit.item.ItemTool;
 import cn.nukkit.level.Sound;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.registry.Registries;
-import cn.nukkit.utils.DyeColor;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -22,14 +25,15 @@ public class BlockComposter extends BlockSolid {
     public static final BlockProperties PROPERTIES = new BlockProperties(COMPOSTER, COMPOSTER_FILL_LEVEL);
     private static final Object2IntMap<String> compostableItems = new Object2IntOpenHashMap<>();
     private static final Object2IntMap<BlockState> compostableBlocks = new Object2IntOpenHashMap<>();
-    public static final Item OUTPUT_ITEM = new ItemDye(DyeColor.BONE_MEAL, 1);
+    public static final Item OUTPUT_ITEM = new ItemBoneMeal();
 
-    public static void init(){
+    public static void init() {
         registerDefaults();
     }
 
     @Override
-    @NotNull public BlockProperties getProperties() {
+    @NotNull
+    public BlockProperties getProperties() {
         return PROPERTIES;
     }
 
@@ -103,7 +107,7 @@ public class BlockComposter extends BlockSolid {
 
     @Override
     public boolean onActivate(@NotNull Item item, Player player, BlockFace blockFace, float fx, float fy, float fz) {
-        if(isNotActivate(player)) return false;
+        if (isNotActivate(player)) return false;
         if (item.isNull()) {
             return false;
         }
@@ -155,7 +159,7 @@ public class BlockComposter extends BlockSolid {
     }
 
     public Item empty(@Nullable Item item, @Nullable Player player) {
-        ComposterEmptyEvent event = new ComposterEmptyEvent(this, player, item, new ItemDye(DyeColor.BONE_MEAL), 0);
+        ComposterEmptyEvent event = new ComposterEmptyEvent(this, player, item, new ItemBoneMeal(), 0);
         this.level.getServer().getPluginManager().callEvent(event);
         if (!event.isCancelled()) {
             setPropertyValue(COMPOSTER_FILL_LEVEL, event.getNewLevel());
@@ -226,21 +230,22 @@ public class BlockComposter extends BlockSolid {
                 ItemID.GLOW_BERRIES
         );
         registerItems(50, ItemID.MELON_SLICE, ItemID.SUGAR_CANE, BlockID.NETHER_SPROUTS);
-        registerItems(65, ItemID.APPLE, BlockID.BEETROOT, ItemID.CARROT, ItemID.COCOA_BEANS, ItemID.POTATO, BlockID.WHEAT);
+        registerItems(65, ItemID.APPLE, BlockID.BEETROOT, ItemID.CARROT, ItemID.COCOA_BEANS, ItemID.POTATO);
         registerItems(85, ItemID.BAKED_POTATO, ItemID.BREAD, ItemID.COOKIE, ItemID.MUSHROOM_STEW);
         registerItems(100, BlockID.CAKE, ItemID.PUMPKIN_PIE);
 
         registerBlocks(30, PINK_PETALS, ItemID.LEAVES, ItemID.LEAVES2, ItemID.SAPLING, SEAGRASS, SWEET_BERRY_BUSH, MOSS_CARPET, HANGING_ROOTS, SMALL_DRIPLEAF_BLOCK);
         registerBlocks(50, GLOW_LICHEN, GRASS_BLOCK, CACTUS, DRIED_KELP_BLOCK, VINE, NETHER_SPROUTS,
                 TWISTING_VINES, WEEPING_VINES, GLOW_LICHEN);
-        registerBlock(50, TALLGRASS, 0);
-        registerBlock(50, TALLGRASS, 1);
-        registerBlock(65, TALLGRASS, 2);
-        registerBlock(65, TALLGRASS, 3);
-        registerBlocks(65, YELLOW_FLOWER, ItemID.RED_FLOWER, DOUBLE_PLANT, WITHER_ROSE, WATERLILY, MELON_BLOCK,
+        registerBlock(50, TALL_GRASS, 0);
+        registerBlock(50, TALL_GRASS, 1);
+        registerBlock(65, TALL_GRASS, 2);
+        registerBlock(65, TALL_GRASS, 3);
+        //todo support all DOUBLE_PLANT
+        registerBlocks(65, YELLOW_FLOWER, ItemID.RED_FLOWER, WITHER_ROSE, WATERLILY, MELON_BLOCK,
                 PUMPKIN, CARVED_PUMPKIN, SEA_PICKLE, BROWN_MUSHROOM, RED_MUSHROOM,
                 WARPED_ROOTS, CRIMSON_ROOTS, SHROOMLIGHT, AZALEA, BIG_DRIPLEAF, MOSS_BLOCK,
-                SPORE_BLOSSOM);
+                SPORE_BLOSSOM, WHEAT);
         registerBlocks(85, HAY_BLOCK, BROWN_MUSHROOM_BLOCK, RED_MUSHROOM_BLOCK);
         registerBlocks(100, CAKE);
     }

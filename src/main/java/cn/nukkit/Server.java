@@ -356,7 +356,7 @@ public class Server {
                 put("sub-motd", "v2.powernukkitx.com");
                 put("server-port", 19132);
                 put("server-ip", "0.0.0.0");
-                put("view-distance", 12);
+                put("view-distance", 16);
                 put("white-list", false);
                 put("achievements", true);
                 put("announce-player-achievements", true);
@@ -408,12 +408,10 @@ public class Server {
         this.baseLangCode = mapInternalLang(langName);
 
         var isShaded = StartArgUtils.isShaded();
-        // 检测启动参数
         if (!StartArgUtils.isValidStart() || (JarStart.isUsingJavaJar() && !isShaded)) {
             log.error(getLanguage().tr("nukkit.start.invalid"));
             return;
         }
-        // 检测非法使用shaded包启动
         if (!this.properties.getBoolean("allow-shaded", false) && isShaded) {
             log.error(getLanguage().tr("nukkit.start.shaded1"));
             log.error(getLanguage().tr("nukkit.start.shaded2"));
@@ -456,7 +454,7 @@ public class Server {
         if (this.getSettings().baseSettings().waterdogpe()) {
             this.checkLoginTime = false;
         }
-        
+
         if (this.getPropertyBoolean("enable-rcon", false)) {
             try {
                 this.rcon = new RCON(this, this.getPropertyString("rcon.password", ""), (!this.getIp().equals("")) ? this.getIp() : "0.0.0.0", this.getPropertyInt("rcon.port", this.getPort()));
@@ -467,27 +465,20 @@ public class Server {
         this.entityMetadata = new EntityMetadataStore();
         this.playerMetadata = new PlayerMetadataStore();
         this.levelMetadata = new LevelMetadataStore();
-
         this.operators = new Config(this.dataPath + "ops.txt", Config.ENUM);
         this.whitelist = new Config(this.dataPath + "white-list.txt", Config.ENUM);
         this.banByName = new BanList(this.dataPath + "banned-players.json");
         this.banByName.load();
         this.banByIP = new BanList(this.dataPath + "banned-ips.json");
         this.banByIP.load();
-
         this.maxPlayers = this.getPropertyInt("max-players", 20);
         this.setAutoSave(this.getPropertyBoolean("auto-save", true));
-
         if (this.getPropertyBoolean("hardcore", false) && this.getDifficulty() < 3) {
             this.setPropertyInt("difficulty", 3);
         }
 
-        log.info(this.getLanguage().tr("nukkit.server.networkStart", this.getIp().equals("") ? "*" : this.getIp(), String.valueOf(this.getPort())));
-        this.serverID = UUID.randomUUID();
-
         log.info(this.getLanguage().tr("nukkit.server.info", this.getName(), TextFormat.YELLOW + this.getNukkitVersion() + " (" + this.getGitCommit() + ")" + TextFormat.WHITE, this.getApiVersion()));
         log.info(this.getLanguage().tr("nukkit.server.license"));
-
         this.consoleSender = new ConsoleCommandSender();
 
         // Initialize metrics
@@ -567,11 +558,8 @@ public class Server {
         }
         this.pluginManager.loadInternalPlugin();
 
-        this.queryRegenerateEvent = new QueryRegenerateEvent(this, 5);
-        this.network = new Network(this);
-
+        this.serverID = UUID.randomUUID();
         this.pluginManager.loadPlugins(this.pluginPath);
-
         {//trim
             Registries.POTION.trim();
             Registries.PACKET.trim();
@@ -597,6 +585,8 @@ public class Server {
 
         loadLevels();
 
+        this.queryRegenerateEvent = new QueryRegenerateEvent(this, 5);
+        this.network = new Network(this);
         this.getTickingAreaManager().loadAllTickingArea();
 
         this.properties.save(true);
@@ -799,10 +789,10 @@ public class Server {
             }
 
             for (Player player : new ArrayList<>(this.players.values())) {
-                player.close(player.getLeaveMessage(), settings.baseSettings().shutdownMessage());
+                player.close(player.getLeaveMessage(), getSettings().baseSettings().shutdownMessage());
             }
 
-            this.settings.save();
+            this.getSettings().save();
 
             log.debug("Disabling all plugins");
             this.pluginManager.disablePlugins();
@@ -851,17 +841,14 @@ public class Server {
     public void start() {
         for (BanEntry entry : this.getIPBans().getEntires().values()) {
             try {
-                this.network.blockAddress(InetAddress.getByName(entry.getName()), -1);
-            } catch (UnknownHostException e) {
-                // ignore
+                this.network.blockAddress(InetAddress.getByName(entry.getName()));
+            } catch (UnknownHostException ignore) {
             }
         }
-
-        //todo send usage setting
         this.tickCounter = 0;
 
         log.info(this.getLanguage().tr("nukkit.server.defaultGameMode", getGamemodeString(this.getGamemode())));
-
+        log.info(this.getLanguage().tr("nukkit.server.networkStart", TextFormat.YELLOW + (this.getIp().isEmpty() ? "*" : this.getIp()), TextFormat.YELLOW + String.valueOf(this.getPort())));
         log.info(this.getLanguage().tr("nukkit.server.startFinished", String.valueOf((double) (System.currentTimeMillis() - Nukkit.START_TIME) / 1000)));
 
         ServerStartedEvent serverStartedEvent = new ServerStartedEvent();
@@ -871,7 +858,7 @@ public class Server {
     }
 
     public void tickProcessor() {
-        getScheduler().scheduleDelayedTask(new Task() {
+        getScheduler().scheduleDelayedTask(InternalPlugin.INSTANCE, new Task() {
             @Override
             public void onRun(int currentTick) {
                 System.gc();
@@ -904,15 +891,15 @@ public class Server {
     }
 
     private void checkTickUpdates(int currentTick, long tickTime) {
-        if (settings.levelSettings().alwaysTickPlayers()) {
+        if (getSettings().levelSettings().alwaysTickPlayers()) {
             for (Player p : new ArrayList<>(this.players.values())) {
                 p.onUpdate(currentTick);
             }
         }
 
-        int baseTickRate = settings.levelSettings().baseTickRate();
+        int baseTickRate = getSettings().levelSettings().baseTickRate();
         //Do level ticks
-        for (Level level : this.levelArray) {
+        for (Level level : this.getLevels().values()) {
             if (level.getTickRate() > baseTickRate && --level.tickRateCounter > 0) {
                 continue;
             }
@@ -931,7 +918,7 @@ public class Server {
                     level.tickRateOptDelay = level.recalcTickOptDelay();
                 }
 
-                if (settings.levelSettings().autoTickRate()) {
+                if (getSettings().levelSettings().autoTickRate()) {
                     if (tickMs < 50 && level.getTickRate() > baseTickRate) {
                         int r;
                         level.setTickRate(r = level.getTickRate() - 1);
@@ -940,7 +927,7 @@ public class Server {
                         }
                         log.debug("Raising level \"{}\" tick rate to {} ticks", level.getName(), level.getTickRate());
                     } else if (tickMs >= 50) {
-                        int autoTickRateLimit = settings.levelSettings().autoTickRateLimit();
+                        int autoTickRateLimit = getSettings().levelSettings().autoTickRateLimit();
                         if (level.getTickRate() == baseTickRate) {
                             level.setTickRate(Math.max(baseTickRate + 1, Math.min(autoTickRateLimit, tickMs / 50)));
                             log.debug("Level \"{}\" took {}ms, setting tick rate to {} ticks", level.getName(), NukkitMath.round(tickMs, 2), level.getTickRate());
@@ -999,7 +986,7 @@ public class Server {
             this.rcon.check();
         }
 
-        this.scheduler.mainThreadHeartbeat(this.tickCounter);
+        this.getScheduler().mainThreadHeartbeat(this.tickCounter);
 
         this.checkTickUpdates(this.tickCounter, tickTime);
 
@@ -1034,14 +1021,10 @@ public class Server {
         // 处理可冻结数组
         int freezableArrayCompressTime = (int) (50 - (System.currentTimeMillis() - tickTime));
         if (freezableArrayCompressTime > 4) {
-            freezableArrayManager.setMaxCompressionTime(freezableArrayCompressTime).tick();
+            getFreezableArrayManager().setMaxCompressionTime(freezableArrayCompressTime).tick();
         }
 
-        //long now = System.currentTimeMillis();
         long nowNano = System.nanoTime();
-        //float tick = Math.min(20, 1000 / Math.max(1, now - tickTime));
-        //float use = Math.min(1, (now - tickTime) / 50);
-
         float tick = (float) Math.min(20, 1000000000 / Math.max(1000000, ((double) nowNano - tickTimeNano)));
         float use = (float) Math.min(1, ((double) (nowNano - tickTimeNano)) / 50000000);
 
@@ -1776,7 +1759,7 @@ public class Server {
         }
 
         if (create) {
-            if (this.settings.playerSettings().savePlayerData()) {
+            if (this.getSettings().playerSettings().savePlayerData()) {
                 log.info(this.getLanguage().tr("nukkit.data.playerNotFound", uuid));
             }
             Position spawn = this.getDefaultLevel().getSafeSpawn();
@@ -1844,9 +1827,9 @@ public class Server {
      */
     public void saveOfflinePlayerData(String nameOrUUid, CompoundTag tag, boolean async) {
         UUID uuid = lookupName(nameOrUUid).orElse(UUID.fromString(nameOrUUid));
-        if (this.settings.playerSettings().savePlayerData()) {
+        if (this.getSettings().playerSettings().savePlayerData()) {
             this.getScheduler().scheduleTask(InternalPlugin.INSTANCE, new Task() {
-                AtomicBoolean hasRun = new AtomicBoolean(false);
+                final AtomicBoolean hasRun = new AtomicBoolean(false);
 
                 @Override
                 public void onRun(int currentTick) {
@@ -2307,7 +2290,7 @@ public class Server {
             this.levels.put(level.getId(), level);
             level.initLevel();
             this.getPluginManager().callEvent(new LevelLoadEvent(level));
-            level.setTickRate(settings.levelSettings().baseTickRate());
+            level.setTickRate(getSettings().levelSettings().baseTickRate());
         }
         if (tickCounter != 0) {//update world enum when load  
             WorldCommand.WORLD_NAME_ENUM.updateSoftEnum();
@@ -2363,9 +2346,9 @@ public class Server {
                 }
                 level = new Level(this, levelName, path, levelConfig.generators().size(), provider, generatorConfig);
 
-                this.levels.put(level.getId(), level);
+                this.getLevels().put(level.getId(), level);
                 level.initLevel();
-                level.setTickRate(settings.levelSettings().baseTickRate());
+                level.setTickRate(getSettings().levelSettings().baseTickRate());
                 this.getPluginManager().callEvent(new LevelInitEvent(level));
                 this.getPluginManager().callEvent(new LevelLoadEvent(level));
             } catch (Exception e) {
@@ -2844,7 +2827,7 @@ public class Server {
     }
 
     public boolean isIgnoredPacket(Class<? extends DataPacket> clazz) {
-        return this.settings.debugSettings().ignoredPackets().contains(clazz.getSimpleName());
+        return this.getSettings().debugSettings().ignoredPackets().contains(clazz.getSimpleName());
     }
 
     public int getServerAuthoritativeMovement() {

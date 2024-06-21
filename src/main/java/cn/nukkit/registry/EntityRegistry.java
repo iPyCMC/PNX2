@@ -149,7 +149,7 @@ public class EntityRegistry implements EntityID, IRegistry<EntityRegistry.Entity
         registerInternal(new EntityDefinition(PILLAGER, "", 114, true, true), EntityPillager.class);
         registerInternal(new EntityDefinition(VILLAGER_V2, "", 115, true, false), EntityVillagerV2.class);
         registerInternal(new EntityDefinition(ZOMBIE_VILLAGER_V2, "", 116, true, false), EntityZombieVillagerV2.class);
-        registerInternal(new EntityDefinition(WANDERING_TRADER, "", 118, true, true), EntityTraderLlama.class);
+        registerInternal(new EntityDefinition(WANDERING_TRADER, "", 118, true, true), EntityWanderingTrader.class);
 //        registerInternal(new EntityDefinition(ELDER_GUARDIAN_GHOST, "", 120, false, true), EntityElderGuardianGhost.class);
         registerInternal(new EntityDefinition(FOX, "", 121, true, true), EntityFox.class);
         registerInternal(new EntityDefinition(BEE, "", 122, true, true), EntityBee.class);
@@ -332,7 +332,7 @@ public class EntityRegistry implements EntityID, IRegistry<EntityRegistry.Entity
         EntityDefinition key = getEntityDefinition(entityId);
         Class<? extends Entity> entityClass = getEntityClass(entityId);
         if (entityClass == null) {
-            throw new RegisterException("This entity class does not override because cant find entity class from entityId {}", entityId);
+            throw new RegisterException("This entity class does not override because can't find entity class from entityId {}", entityId);
         }
         if (!entityClass.isAssignableFrom(value)) {
             throw new RegisterException("This entity class {} does not override the {} because is not assignable from {}!", entityClass.getSimpleName(), value.getSimpleName(), value.getSimpleName());

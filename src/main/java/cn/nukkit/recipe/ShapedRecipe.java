@@ -1,9 +1,10 @@
 package cn.nukkit.recipe;
 
 import cn.nukkit.item.Item;
+import cn.nukkit.network.protocol.types.RecipeUnlockingRequirement;
 import cn.nukkit.recipe.descriptor.DefaultDescriptor;
 import cn.nukkit.recipe.descriptor.ItemDescriptor;
-import cn.nukkit.registry.Registries;
+import cn.nukkit.registry.RecipeRegistry;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.netty.util.collection.CharObjectHashMap;
@@ -19,7 +20,6 @@ import static cn.nukkit.recipe.RecipeType.SHAPED;
 public class ShapedRecipe extends CraftingRecipe {
     private final String[] shape;
     private final CharObjectHashMap<ItemDescriptor> shapedIngredients = new CharObjectHashMap<>();
-
     private final int row;
     private final int col;
     private final boolean mirror;
@@ -31,17 +31,17 @@ public class ShapedRecipe extends CraftingRecipe {
     /**
      * Constructs a ShapedRecipe instance.
      *
-     * @param primaryResult    Primary result of the recipe
-     * @param shape<br>        Array of 1, 2, or 3 strings representing the rows of the recipe.
-     *                         This accepts an array of 1, 2 or 3 strings. Each string should be of the same length and must be at most 3
-     *                         characters long. Each character represents a unique type of ingredient. Spaces are interpreted as air.
-     * @param ingredients<br>  Char =&gt; Item map of items to be set into the shape.
-     *                         This accepts an array of Items, indexed by character. Every unique character (except space) in the shape
-     *                         array MUST have a corresponding item in this list. Space character is automatically treated as air.
-     * @param extraResults<br> List of additional result items to leave in the crafting grid afterwards. Used for things like cake recipe
-     *                         empty buckets.
-     *                         <p>
-     *                         Note: Recipes **do not** need to be square. Do NOT add padding for empty rows/columns.
+     * @param primaryResult Primary result of the recipe
+     * @param shape         <br>        Array of 1, 2, or 3 strings representing the rows of the recipe.
+     *                      This accepts an array of 1, 2 or 3 strings. Each string should be of the same length and must be at most 3
+     *                      characters long. Each character represents a unique type of ingredient. Spaces are interpreted as air.
+     * @param ingredients   <br>  Char =&gt; Item map of items to be set into the shape.
+     *                      This accepts an array of Items, indexed by character. Every unique character (except space) in the shape
+     *                      array MUST have a corresponding item in this list. Space character is automatically treated as air.
+     * @param extraResults  <br> List of additional result items to leave in the crafting grid afterwards. Used for things like cake recipe
+     *                      empty buckets.
+     *                      <p>
+     *                      Note: Recipes do not need to be square. Do NOT add padding for empty rows/columns.
      */
     public ShapedRecipe(String recipeId, int priority, Item primaryResult, String[] shape, Map<Character, Item> ingredients, List<Item> extraResults) {
         this(recipeId, priority, primaryResult, shape,
@@ -54,16 +54,21 @@ public class ShapedRecipe extends CraftingRecipe {
     }
 
     public ShapedRecipe(String recipeId, UUID uuid, int priority, Item primaryResult, String[] shape, Map<Character, ItemDescriptor> ingredients, Collection<Item> extraResults, boolean mirror) {
-        super(recipeId == null ? Registries.RECIPE.computeRecipeId(Lists.asList(primaryResult, extraResults.toArray(Item.EMPTY_ARRAY)), ingredients.values(), SHAPED) : recipeId, priority);
+        this(recipeId, uuid, priority, primaryResult, shape, ingredients, extraResults, mirror, null);
+    }
+
+    public ShapedRecipe(String recipeId, UUID uuid, int priority, Item primaryResult, String[] shape, Map<Character, ItemDescriptor> ingredients,
+                        Collection<Item> extraResults, boolean mirror, RecipeUnlockingRequirement recipeUnlockingRequirement) {
+        super(recipeId == null ? RecipeRegistry.computeRecipeId(Lists.asList(primaryResult, extraResults.toArray(Item.EMPTY_ARRAY)), ingredients.values(), SHAPED) : recipeId, priority, recipeUnlockingRequirement);
         this.uuid = uuid;
         this.row = shape.length;
         this.mirror = mirror;
-        if (this.row > 3 || this.row <= 0) {
+        if (this.row > 3 || this.row == 0) {
             throw new RuntimeException("Shaped recipes may only have 1, 2 or 3 rows, not " + this.row);
         }
 
         this.col = shape[0].length();
-        if (this.col > 3 || this.col <= 0) {
+        if (this.col > 3 || this.col == 0) {
             throw new RuntimeException("Shaped recipes may only have 1, 2 or 3 columns, not " + this.col);
         }
 
@@ -95,7 +100,7 @@ public class ShapedRecipe extends CraftingRecipe {
             this.ingredients.add(entry.getValue());
         }
     }
-
+    
     public int getWidth() {
         return this.col;
     }
@@ -105,7 +110,7 @@ public class ShapedRecipe extends CraftingRecipe {
     }
 
     public Item getResult() {
-        return this.results.get(0);
+        return this.results.getFirst();
     }
 
     public ShapedRecipe setIngredient(String key, Item item) {

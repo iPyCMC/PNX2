@@ -60,6 +60,8 @@ public final class ServerSettings extends OkaeriConfig {
         boolean waterdogpe = false;
         @Comment("nukkit.server.settings.baseSettings.autosave")
         int autosave = 6000;
+        @Comment("nukkit.server.settings.baseSettings.saveUnknownBlock")
+        boolean saveUnknownBlock = true;
     }
 
     @EqualsAndHashCode(callSuper = true)
@@ -76,6 +78,8 @@ public final class ServerSettings extends OkaeriConfig {
         int compressionBufferSize = 1048576;
         @Comment("nukkit.server.settings.networkSettings.maxDecompressSize")
         int maxDecompressSize = 67108864;
+        @Comment("nukkit.server.settings.networkSettings.packetLimit")
+        int packetLimit = 240;
     }
 
     @EqualsAndHashCode(callSuper = true)
@@ -127,7 +131,7 @@ public final class ServerSettings extends OkaeriConfig {
         @Comment("nukkit.server.settings.chunkSettings.clearTickList")
         boolean clearTickList = false;
         @Comment("nukkit.server.settings.chunkSettings.generationQueueSize")
-        int generationQueueSize = 16;
+        int generationQueueSize = 128;
     }
 
     @EqualsAndHashCode(callSuper = true)

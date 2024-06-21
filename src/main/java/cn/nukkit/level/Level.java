@@ -107,6 +107,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -278,7 +279,7 @@ public class Level implements Metadatable {
     private final Long2IntMap chunkTickList = new Long2IntOpenHashMap();
     private final VibrationManager vibrationManager = new SimpleVibrationManager(this);
     public boolean stopTime;
-    public float skyLightSubtracted;
+    public int skyLightSubtracted;
     public int sleepTicks = 0;
     public int tickRateTime = 0;
     public int tickRateCounter = 0;
@@ -287,7 +288,7 @@ public class Level implements Metadatable {
      */
     public int tickRateOptDelay = 1;
     public GameRules gameRules;
-    private LevelProvider provider;
+    private AtomicReference<LevelProvider> provider;
     private float time;
     private int nextTimeSendTick;
     private final String name;
@@ -328,7 +329,7 @@ public class Level implements Metadatable {
         this.autoSave = server.getAutoSave();
         this.generatorClass = Registries.GENERATOR.get(generatorConfig.name());
         if (generatorClass == null) {
-            throw new NullPointerException("Cant find generator for " + generatorConfig.name() + " The level " + name + " cant be load!");
+            throw new NullPointerException("Can't find generator for " + generatorConfig.name() + " The level " + name + " can't be load!");
         }
         try {
             this.generator = generatorClass.getConstructor(DimensionData.class, Map.class).newInstance(
@@ -341,7 +342,7 @@ public class Level implements Metadatable {
         }
 
         try {
-            this.provider = provider.getConstructor(Level.class, String.class).newInstance(this, path);
+            this.provider = new AtomicReference<>(provider.getConstructor(Level.class, String.class).newInstance(this, path));
         } catch (ReflectiveOperationException e) {
             throw new LevelException("Constructor of " + provider + " failed", e);
         }
@@ -520,11 +521,11 @@ public class Level implements Metadatable {
 
     public void initLevel() {
         this.gameRules = this.requireProvider().getGamerules();
-        log.info("Preparing start region for level \"{}\"", this.getName());
         Position spawn = this.getSpawnLocation();
         if (!getChunk(spawn.getChunkX(), spawn.getChunkZ(), true).getChunkState().canSend()) {
             this.generateChunk(spawn.getChunkX(), spawn.getChunkZ());
         }
+        log.info("Loading is complete for level \"{}\"", TextFormat.GREEN + this.getName());
     }
 
     public Generator getGenerator() {
@@ -540,7 +541,7 @@ public class Level implements Metadatable {
     }
 
     public final LevelProvider getProvider() {
-        return provider;
+        return provider.get();
     }
 
     /**
@@ -569,14 +570,14 @@ public class Level implements Metadatable {
 
     public void close() {
         this.gameLoop.stop();
-        LevelProvider levelProvider = this.provider;
+        LevelProvider levelProvider = this.provider.get();
         if (levelProvider != null) {
             if (this.getAutoSave()) {
                 this.save(true);
             }
             levelProvider.close();
         }
-        this.provider = null;
+        this.provider.set(null);
         this.blockMetadata = null;
         this.server.getLevels().remove(this.levelId);
     }
@@ -989,7 +990,7 @@ public class Level implements Metadatable {
                             if (entity != null && entity.isInitialized() && entity instanceof EntityAsyncPrepare entityAsyncPrepare) {
                                 entityAsyncPrepare.asyncPrepare(currentTick);
                             }
-                        }), Server.getInstance().computeThreadPool).join();
+                        }), Server.getInstance().getComputeThreadPool()).join();
                 for (long id : this.updateEntities.keySetLong()) {
                     Entity entity = this.updateEntities.get(id);
                     if (entity instanceof EntityIntelligent intelligent) {
@@ -1162,7 +1163,7 @@ public class Level implements Metadatable {
             }
 
             var b = this.getBlock(vector.getFloorX(), vector.getFloorY(), vector.getFloorZ());
-            if (b.getProperties() != BlockTallgrass.PROPERTIES && !(b instanceof BlockFlowingWater))
+            if (b.getProperties() != BlockTallGrass.PROPERTIES && !(b instanceof BlockFlowingWater))
                 vector.y += 1;
             CompoundTag nbt = new CompoundTag()
                     .putList("Pos", new ListTag<DoubleTag>().add(new DoubleTag(vector.x))
@@ -1810,13 +1811,12 @@ public class Level implements Metadatable {
         if (chunk != null) {
             level = chunk.getBlockSkyLight((int) pos.x & 0x0f, ensureY((int) pos.y), (int) pos.z & 0x0f);
             level -= this.skyLightSubtracted;
-
             if (level < 15) {
-                level = Math.max(chunk.getBlockLight((int) pos.x & 0x0f, ensureY((int) pos.y), (int) pos.z & 0x0f),
+                level = Math.max(chunk.getBlockLight(
+                                (int) pos.x & 0x0f, ensureY((int) pos.y), (int) pos.z & 0x0f),
                         level);
             }
         }
-
         return level;
     }
 
@@ -2257,7 +2257,6 @@ public class Level implements Metadatable {
         }
 
         if (update) {
-
             if (server.getSettings().chunkSettings().lightUpdates()) {
                 updateAllLight(block);
             }
@@ -3066,6 +3065,14 @@ public class Level implements Metadatable {
         setBlockStateAt(x, y, z, 0, state);
     }
 
+    public BlockState getBlockStateAt(int x, int y, int z, int layer) {
+        return this.getChunk(x >> 4, z >> 4, true).getBlockState(x & 0x0f, ensureY(y), z & 0x0f, layer);
+    }
+
+    public BlockState getBlockStateAt(int x, int y, int z) {
+        return getBlockStateAt(x, y, z, 0);
+    }
+
     public void setBlockStateAt(int x, int y, int z, int layer, BlockState state) {
         IChunk chunk = this.getChunk(x >> 4, z >> 4, true);
         chunk.setBlockState(x & 0x0f, ensureY(y), z & 0x0f, state, layer);
@@ -3074,14 +3081,6 @@ public class Level implements Metadatable {
         if (server.getSettings().chunkSettings().lightUpdates()) {
             updateAllLight(new Vector3(x, y, z));
         }
-    }
-
-    public BlockState getBlockStateAt(int x, int y, int z, int layer) {
-        return this.getChunk(x >> 4, z >> 4, true).getBlockState(x & 0x0f, ensureY(y), z & 0x0f, layer);
-    }
-
-    public BlockState getBlockStateAt(int x, int y, int z) {
-        return getBlockStateAt(x, y, z, 0);
     }
 
     /**

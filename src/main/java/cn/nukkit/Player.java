@@ -3,6 +3,7 @@ package cn.nukkit;
 import cn.nukkit.AdventureSettings.Type;
 import cn.nukkit.api.UsedByReflection;
 import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockAir;
 import cn.nukkit.block.BlockBed;
 import cn.nukkit.block.BlockEndPortal;
 import cn.nukkit.block.BlockID;
@@ -190,7 +191,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     /// static fields
     public boolean playedBefore;
     public boolean spawned = false;
-    public boolean locallyInitialized = false;
+    public volatile boolean locallyInitialized = false;
     public boolean loggedIn = false;
     public final HashSet<String> achievements = new HashSet<>();
     public int gamemode;
@@ -292,7 +293,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     /**
      * 玩家升级时播放音乐的时间
      * <p>
-     * Time to play sound when player upgrades
+     * Time to play sound swhen player upgrades
      */
     protected int lastPlayerdLevelUpSoundTime = 0;
     /**
@@ -1249,11 +1250,13 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
      * 玩家客户端初始化完成后调用
      */
     protected void onPlayerLocallyInitialized() {
+        if (locallyInitialized) return;
+        locallyInitialized = true;
+
         //init entity data property
         this.setDataProperty(NAME, info.getUsername(), false);
         this.setDataProperty(NAMETAG_ALWAYS_SHOW, 1, false);
 
-        locallyInitialized = true;
         PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(this,
                 new TranslationContainer(TextFormat.YELLOW + "%multiplayer.player.joined", new String[]{
                         this.getDisplayName()
@@ -1278,30 +1281,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         this.setGamemode(this.gamemode, false, null, true);
         this.sendData(this.hasSpawned.values().toArray(Player.EMPTY_ARRAY), entityDataMap);
         this.spawnToAll();
-
-        //Now it should be fixed, keep this hack code to avoid again
-//        Server.getInstance().getScheduler().scheduleTask(InternalPlugin.INSTANCE, () -> {
-//            for (var b : this.level.getBlockEntities().values()) {
-//                if (b instanceof BlockEntitySpawnable blockEntitySpawnable) {
-//                    UpdateBlockPacket setAir = new UpdateBlockPacket();
-//                    setAir.blockRuntimeId = BlockAir.STATE.blockStateHash();
-//                    setAir.flags = UpdateBlockPacket.FLAG_NETWORK;
-//                    setAir.x = b.getFloorX();
-//                    setAir.y = b.getFloorY();
-//                    setAir.z = b.getFloorZ();
-//                    this.dataPacket(setAir);
-//
-//                    UpdateBlockPacket revertAir = new UpdateBlockPacket();
-//                    revertAir.blockRuntimeId = b.getBlock().getRuntimeId();
-//                    revertAir.flags = UpdateBlockPacket.FLAG_NETWORK;
-//                    revertAir.x = b.getFloorX();
-//                    revertAir.y = b.getFloorY();
-//                    revertAir.z = b.getFloorZ();
-//                    this.dataPacket(revertAir);
-//                    blockEntitySpawnable.spawnTo(this);
-//                }
-//            }
-//        }, true);
+        this.refreshBlockEntity(1);
     }
 
     /**
@@ -1333,7 +1313,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
     }
 
     protected void respawn() {
-        //the player cant respawn if the server is hardcore
+        //the player can't respawn if the server is hardcore
         if (this.server.isHardcore()) {
             this.setBanned(true);
             return;
@@ -1395,7 +1375,6 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         this.offhandInventory.sendContents(this);
         this.teleport(Location.fromObject(respawnPos.add(0, this.getEyeHeight(), 0), respawnPos.level), TeleportCause.PLAYER_SPAWN);
         this.spawnToAll();
-        this.scheduleUpdate();
     }
 
     @Override
@@ -4313,10 +4292,14 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
             this.sendPosition(this, to.yaw, to.pitch, MovePlayerPacket.MODE_TELEPORT);
             this.newPosition = this;
         }
-
-        this.resetFallDistance();
         //state update
         this.positionChanged = true;
+
+        if (switchLevel) {
+            refreshBlockEntity(10);
+            refreshChunkRender();
+        }
+        this.resetFallDistance();
         //DummyBossBar
         this.getDummyBossBars().values().forEach(DummyBossBar::reshow);
         //Weather
@@ -4328,7 +4311,40 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
         if (isSpectator()) {
             this.setGamemode(this.gamemode, false, null, true);
         }
+        this.scheduleUpdate();
         return true;
+    }
+
+    public void refreshChunkRender() {
+        final int origin = getViewDistance();
+        this.setViewDistance(1);
+        this.setViewDistance(32);
+        this.setViewDistance(origin);
+    }
+
+    public void refreshBlockEntity(int delay) {
+        Server.getInstance().getScheduler().scheduleDelayedTask(InternalPlugin.INSTANCE, () -> {
+            for (var b : this.level.getBlockEntities().values()) {
+                if (b instanceof BlockEntitySpawnable blockEntitySpawnable) {
+                    UpdateBlockPacket setAir = new UpdateBlockPacket();
+                    setAir.blockRuntimeId = BlockAir.STATE.blockStateHash();
+                    setAir.flags = UpdateBlockPacket.FLAG_NETWORK;
+                    setAir.x = b.getFloorX();
+                    setAir.y = b.getFloorY();
+                    setAir.z = b.getFloorZ();
+                    this.dataPacket(setAir);
+
+                    UpdateBlockPacket revertAir = new UpdateBlockPacket();
+                    revertAir.blockRuntimeId = b.getBlock().getRuntimeId();
+                    revertAir.flags = UpdateBlockPacket.FLAG_NETWORK;
+                    revertAir.x = b.getFloorX();
+                    revertAir.y = b.getFloorY();
+                    revertAir.z = b.getFloorZ();
+                    this.dataPacket(revertAir);
+                    blockEntitySpawnable.spawnTo(this);
+                }
+            }
+        }, delay, true);
     }
 
     /**
