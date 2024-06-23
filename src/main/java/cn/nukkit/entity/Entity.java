@@ -469,6 +469,8 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
             if (this.namedTag.contains("CustomNameAlwaysVisible")) {
                 this.setNameTagAlwaysVisible(this.namedTag.getBoolean("CustomNameAlwaysVisible"));
             }
+        } else {
+            this.entityDataMap.put(NAME, "");
         }
 
         if (this.namedTag.contains("Attributes")) {
@@ -481,7 +483,6 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
         this.entityDataMap.getOrCreateFlags();
         this.entityDataMap.put(AIR_SUPPLY, this.namedTag.getShort("Air"));
         this.entityDataMap.put(AIR_SUPPLY_MAX, 400);
-        this.entityDataMap.put(NAME, "");
         this.entityDataMap.put(LEASH_HOLDER, -1);
         this.entityDataMap.put(SCALE, 1f);
         this.entityDataMap.put(HEIGHT, this.getHeight());
