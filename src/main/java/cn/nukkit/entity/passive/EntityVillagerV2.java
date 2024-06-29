@@ -41,7 +41,7 @@ public class EntityVillagerV2 extends EntityIntelligent implements InventoryHold
     /**
      * 代表交易配方
      */
-    protected ListTag<CompoundTag> recipes;
+    public ListTag<CompoundTag> recipes = new ListTag<>();
     /**
      * 用于控制村民的等级成长所需要的经验
      * 例如[0,10,20,30,40] 村民达到1级所需经验0,2级为10,这里的经验是{@link EntityVillagerV2#tradeExp}.

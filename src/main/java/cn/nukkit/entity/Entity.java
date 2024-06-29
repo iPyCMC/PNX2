@@ -175,7 +175,7 @@ public abstract class Entity extends Location implements Metadatable, EntityID, 
     private int maxHealth = 20;
     protected String name;
     private volatile boolean initialized;
-    protected volatile boolean saveWithChunk = true;
+    public boolean saveWithChunk = true;
     private final Map<String, Integer> intProperties = new LinkedHashMap<>();
     private final Map<String, Float> floatProperties = new LinkedHashMap<>();
     protected final Map<Integer, Attribute> attributes = new HashMap<>();
