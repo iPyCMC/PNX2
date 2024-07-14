@@ -133,10 +133,6 @@ public abstract class Item implements Cloneable, ItemID {
         return hasMeta;
     }
 
-    public void setMeta(int meta) {
-        this.meta = meta;
-    }
-
     public boolean canBeActivated() {
         return false;
     }
