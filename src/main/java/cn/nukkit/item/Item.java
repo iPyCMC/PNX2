@@ -125,6 +125,10 @@ public abstract class Item implements Cloneable, ItemID {
     public void internalAdjust() {
     }
 
+    public void setMeta(int meta) {
+        this.meta = meta;
+    }
+
     public boolean hasMeta() {
         return hasMeta;
     }
@@ -1339,7 +1343,7 @@ public abstract class Item implements Cloneable, ItemID {
                 tags = this.tags.clone();
             }
             Item item = (Item) super.clone();
-            item.tags = tags;
+            item.setCompoundTag(tags);
             return item;
         } catch (CloneNotSupportedException e) {
             return null;
