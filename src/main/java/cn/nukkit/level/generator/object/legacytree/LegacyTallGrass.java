@@ -1,19 +1,18 @@
 package cn.nukkit.level.generator.object.legacytree;
 
 import cn.nukkit.block.*;
-import cn.nukkit.block.property.enums.TallGrassType;
 import cn.nukkit.level.generator.object.BlockManager;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.utils.random.RandomSourceProvider;
 
 import java.util.Objects;
 
-import static cn.nukkit.block.property.CommonBlockProperties.TALL_GRASS_TYPE;
+import static cn.nukkit.block.property.CommonBlockProperties.UPPER_BLOCK_BIT;
 
 public class LegacyTallGrass {
     private static final BlockState[] places = {//total 106
-            BlockTallGrass.PROPERTIES.getBlockState(TALL_GRASS_TYPE, TallGrassType.DEFAULT),// 50
-            BlockTallGrass.PROPERTIES.getBlockState(TALL_GRASS_TYPE, TallGrassType.TALL),// 30
+            BlockShortGrass.PROPERTIES.getDefaultState(), //50
+            BlockTallGrass.PROPERTIES.getDefaultState(),// 30
             BlockYellowFlower.PROPERTIES.getDefaultState(),// 10
             BlockPoppy.PROPERTIES.getDefaultState(),// 10
             BlockAzureBluet.PROPERTIES.getDefaultState(),// 5
@@ -43,8 +42,11 @@ public class LegacyTallGrass {
                         int absRn = Math.abs(ranNumber);
                         if (-300 <= ranNumber && ranNumber <= 300) {
                             level.setBlockStateAt(x, newY, z, places[0]);
-                        } else if (300 <= absRn && absRn <= 500) {//-300 ~ -500 + 300 ~ 500
+                        } else if (300 <= absRn && absRn <= 500) {//-300 ~ -500 + 300 ~ 50
                             level.setBlockStateAt(x, newY, z, places[1]);
+                            BlockTallGrass block = new BlockTallGrass();
+                            block.setTopHalf(true);
+                            level.getLevel().setBlock(x, newY + 1, z, block, false, false);
                         } else if (500 <= ranNumber && ranNumber < 600) {
                             level.setBlockStateAt(x, newY, z, places[2]);
                         } else if (-600 <= ranNumber && ranNumber <= -500) {
