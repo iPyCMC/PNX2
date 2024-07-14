@@ -47,11 +47,6 @@ public class BlockTallGrass extends BlockDoublePlant {
     }
 
     @Override
-    public boolean canBeReplaced() {
-        return true;
-    }
-
-    @Override
     public int getBurnChance() {
         return 60;
     }
@@ -59,53 +54,6 @@ public class BlockTallGrass extends BlockDoublePlant {
     @Override
     public int getBurnAbility() {
         return 100;
-    }
-
-    @Override
-    public boolean place(@NotNull Item item, @NotNull Block block, @NotNull Block target, @NotNull BlockFace face, double fx, double fy, double fz, Player player) {
-        if (BlockSweetBerryBush.isSupportValid(down())) {
-            this.getLevel().setBlock(block, this, true);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public int onUpdate(int type) {
-        if (type == Level.BLOCK_UPDATE_NORMAL) {
-            if (!BlockSweetBerryBush.isSupportValid(down(1, 0))) {
-                this.getLevel().useBreakOn(this);
-                return Level.BLOCK_UPDATE_NORMAL;
-            }
-        }
-        return 0;
-    }
-
-    @Override
-    public boolean onActivate(@NotNull Item item, Player player, BlockFace blockFace, float fx, float fy, float fz) {
-        if (item.isFertilizer()) {
-            Block up = this.up();
-
-            if (up.isAir()) {
-                if (player != null && !player.isCreative()) {
-                    item.count--;
-                }
-
-                BlockTallGrass doublePlant = new BlockTallGrass();
-                doublePlant.setTopHalf(false);
-
-                this.level.addParticle(new BoneMealParticle(this));
-                this.level.setBlock(this, doublePlant, true, false);
-
-                doublePlant.setTopHalf(true);
-                this.level.setBlock(up, doublePlant, true);
-                this.level.updateAround(this);
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     @Override
