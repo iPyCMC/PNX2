@@ -61,6 +61,7 @@ public abstract class BlockDoublePlant extends BlockFlowable {
                 // Bottom
                 if (!isSupportValid(down())) {
                     this.getLevel().setBlock(this, Block.get(BlockID.AIR), false, true);
+                    //this.getLevel().useBreakOn(this);
                     return Level.BLOCK_UPDATE_NORMAL;
                 }
             }
