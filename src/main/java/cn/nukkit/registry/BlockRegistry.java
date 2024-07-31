@@ -34,7 +34,7 @@ public final class BlockRegistry implements BlockID, IRegistry<String, Block, Cl
     private static final Object2ObjectOpenHashMap<String, FastConstructor<? extends Block>> CACHE_CONSTRUCTORS = new Object2ObjectOpenHashMap<>();
     private static final Object2ObjectOpenHashMap<String, BlockProperties> PROPERTIES = new Object2ObjectOpenHashMap<>();
     private static final Map<Plugin, List<CustomBlockDefinition>> CUSTOM_BLOCK_DEFINITIONS = new LinkedHashMap<>();
-    private static final boolean isEdu = Server.getInstance().isEduEnabled();
+    private static final boolean isEdu = Server.getInstance().getProperties().getProperties().get("edu-enabled", false);
 
     public static final Set<String> eduBlocks = Set.of(
             "minecraft:camera",

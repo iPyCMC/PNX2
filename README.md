@@ -1,3 +1,6 @@
+<p align="right">
+<img src="https://raw.githubusercontent.com/PowerNukkitX/PowerNukkitX/master/.github/img/lang/eng.svg">
+</p>
 <p align="center">
     <a href="https://powernukkitx.com">
       <img src="https://www.powernukkitx.com/assets/image/PNX_LOGO_sm.png" width=20%>
@@ -38,6 +41,16 @@
 </p>
 <br>
 
+<p align="center">
+      <a href="README_FR.md">
+        <img src="https://raw.githubusercontent.com/PowerNukkitX/PowerNukkitX/master/.github/img/lang/fr.svg">
+      </a>
+      <a href="README_RU.md">
+         <img src="https://raw.githubusercontent.com/PowerNukkitX/PowerNukkitX/master/.github/img/lang/ru.svg">
+      </a>
+</p>
+
+<br>
 **Feature-rich, highly customizable third-party server software for Minecraft: Bedrock Edition.**
 - 🪄 **Custom Item,Block,Entity**
 - 🤖 **Built-in AI framework**

@@ -37,7 +37,11 @@ public class BlockEntitySculkSensor extends BlockEntity implements VibrationList
 
     @Override
     public void onBreak(boolean isSilkTouch) {
-        this.level.getVibrationManager().removeListener(this);
+        if (!isSilkTouch) {
+            this.level.getVibrationManager().removeListener(this);
+        } else {
+            calPower();
+        }
     }
 
     @Override
