@@ -1,6 +1,7 @@
 package cn.nukkit.resourcepacks;
 
 import cn.nukkit.Server;
+import cn.nukkit.config.ServerPropertiesKeys;
 import cn.nukkit.resourcepacks.loader.ResourcePackLoader;
 import cn.nukkit.resourcepacks.loader.ZippedResourcePackLoader;
 import com.google.common.collect.Sets;
@@ -64,7 +65,7 @@ public class ResourcePackManager {
         this.resourcePacksById.clear();
         this.resourcePacks.clear();
 
-        if (Server.getInstance().isEduEnabled() && !Server.getInstance().getSettings().baseSettings().waterdogpe()) {
+        if (Server.getInstance().getProperties().getProperties().get("edu-enabled", false) && !Server.getInstance().getSettings().baseSettings().waterdogpe()) {
             // Chemistry Resource Pack
             ResourcePack resourcePack = new ChemistryResourcePack();
             resourcePacks.add(resourcePack);

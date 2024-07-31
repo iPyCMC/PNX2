@@ -1,3 +1,7 @@
+<p align="right">
+<img src="https://raw.githubusercontent.com/PowerNukkitX/PowerNukkitX/master/.github/img/lang/eng.svg">
+</p>
+
 <p align="center">
     <a href="https://powernukkitx.com">
       <img src="https://www.powernukkitx.com/assets/image/PNX_LOGO_sm.png" width=20%>
@@ -36,6 +40,16 @@
       <img alt="License: LGPL-3" src="https://img.shields.io/badge/License-LGPL--3-yellow.svg" />
    </a>
 </p>
+
+<p align="center">
+      <a href="README_FR.md">
+        <img src="https://raw.githubusercontent.com/PowerNukkitX/PowerNukkitX/master/.github/img/lang/fr.svg">
+      </a>
+      <a href="README_RU.md">
+         <img src="https://raw.githubusercontent.com/PowerNukkitX/PowerNukkitX/master/.github/img/lang/ru.svg">
+      </a>
+</p>
+
 <br>
 
 **Feature-rich, highly customizable third-party server software for Minecraft: Bedrock Edition.**

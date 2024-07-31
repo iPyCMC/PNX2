@@ -133,10 +133,6 @@ public abstract class Item implements Cloneable, ItemID {
         return hasMeta;
     }
 
-    public void setMeta(int meta) {
-        this.meta = meta;
-    }
-
     public boolean canBeActivated() {
         return false;
     }
@@ -761,7 +757,11 @@ public abstract class Item implements Cloneable, ItemID {
         try {
             return NBTIO.read(tag, ByteOrder.LITTLE_ENDIAN);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            try {
+                return NBTIO.read(tag, ByteOrder.BIG_ENDIAN);
+            } catch (IOException ee) {
+                throw new UncheckedIOException(ee);
+            }
         }
     }
 
