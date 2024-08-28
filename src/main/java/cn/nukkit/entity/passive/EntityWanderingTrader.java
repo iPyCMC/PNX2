@@ -5,13 +5,13 @@ import cn.nukkit.level.format.IChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
 import org.jetbrains.annotations.NotNull;
 
-public class EntityTraderLlama extends EntityCreature implements IEntityNPC {
+public class EntityWanderingTrader extends EntityCreature implements IEntityNPC {
     @Override
     @NotNull public String getIdentifier() {
-        return TRADER_LLAMA;
+        return WANDERING_TRADER;
     }
 
-    public EntityTraderLlama(IChunk chunk, CompoundTag nbt) {
+    public EntityWanderingTrader(IChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
     }
 
@@ -29,6 +29,8 @@ public class EntityTraderLlama extends EntityCreature implements IEntityNPC {
     public String getOriginalName() {
         return "Wandering Trader";
     }
+
+
 
     @Override
     public void initEntity() {
