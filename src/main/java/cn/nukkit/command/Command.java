@@ -135,7 +135,7 @@ public abstract class Command {
             customData.aliases = new CommandEnum(this.name + "Aliases", aliases);
         }
 
-        String tra = CustomTranslationManager.translate(player.getLanguageCode().name(), this.description);
+        String tra = CustomTranslationManager.translate(player, this.description);
         if(Objects.equals(tra, this.description)) {
             if (plugin == InternalPlugin.INSTANCE) {
                 customData.description = player.getServer().getLanguage().tr(this.getDescription(), CommandOutputContainer.EMPTY_STRING, "commands.", false);

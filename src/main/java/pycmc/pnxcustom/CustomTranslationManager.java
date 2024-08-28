@@ -49,7 +49,6 @@ public class CustomTranslationManager {
         return key;
     }
 
-    /*
     public static String translate(Player p, String key) {
         if (providers == null) {
             return key;
@@ -74,5 +73,5 @@ public class CustomTranslationManager {
             }
         }
         return key;
-    }*/
+    }
 }
