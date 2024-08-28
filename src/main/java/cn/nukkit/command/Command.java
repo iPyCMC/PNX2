@@ -22,14 +22,9 @@ import cn.nukkit.plugin.InternalPlugin;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.TextFormat;
 import io.netty.util.internal.EmptyArrays;
+import pycmc.pnxcustom.CustomTranslationManager;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -140,15 +135,20 @@ public abstract class Command {
             customData.aliases = new CommandEnum(this.name + "Aliases", aliases);
         }
 
-        if (plugin == InternalPlugin.INSTANCE) {
-            customData.description = player.getServer().getLanguage().tr(this.getDescription(), CommandOutputContainer.EMPTY_STRING, "commands.", false);
-        } else if (plugin instanceof PluginBase pluginBase) {
-            var i18n = PluginI18nManager.getI18n(pluginBase);
-            if (i18n != null) {
-                customData.description = i18n.tr(player.getLanguageCode(), this.getDescription());
-            } else {
-                customData.description = player.getServer().getLanguage().tr(this.getDescription());
+        String tra = CustomTranslationManager.translate(player.getLanguageCode().name(), this.description);
+        if(Objects.equals(tra, this.description)) {
+            if (plugin == InternalPlugin.INSTANCE) {
+                customData.description = player.getServer().getLanguage().tr(this.getDescription(), CommandOutputContainer.EMPTY_STRING, "commands.", false);
+            } else if (plugin instanceof PluginBase pluginBase) {
+                var i18n = PluginI18nManager.getI18n(pluginBase);
+                if (i18n != null) {
+                    customData.description = i18n.tr(player.getLanguageCode(), this.getDescription());
+                } else {
+                    customData.description = player.getServer().getLanguage().tr(this.getDescription());
+                }
             }
+        } else {
+            customData.description = tra;
         }
 
         this.commandParameters.forEach((key, params) -> {
