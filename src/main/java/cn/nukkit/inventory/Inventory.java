@@ -76,10 +76,6 @@ public interface Inventory {
      */
     boolean setItem(int index, Item item, boolean send);
 
-    default boolean setItemByPlayer(Player player, int index, Item item, boolean send) {
-        return setItem(index, item, send);
-    }
-
     /**
      * Add some items to the inventory
      *
@@ -284,6 +280,10 @@ public interface Inventory {
 
     @ApiStatus.Internal
     default ContainerSlotType getSlotType(int nativeSlot) {
-        return slotTypeMap().get(nativeSlot);
+        ContainerSlotType type = slotTypeMap().get(nativeSlot);
+        if(type == null) {
+            throw new RuntimeException("ContainerSlotType " + nativeSlot + " does not exist!");
+        }
+        return type;
     }
 }
