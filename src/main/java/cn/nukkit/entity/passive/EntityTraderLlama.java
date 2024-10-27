@@ -30,8 +30,6 @@ public class EntityTraderLlama extends EntityCreature implements IEntityNPC {
         return "Wandering Trader";
     }
 
-    
-
     @Override
     public void initEntity() {
         this.setMaxHealth(20);

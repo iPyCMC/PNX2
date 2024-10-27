@@ -25,6 +25,16 @@ repositories {
     maven("https://jitpack.io")
     maven("https://repo.opencollab.dev/maven-releases/")
     maven("https://repo.opencollab.dev/maven-snapshots/")
+
+    maven {
+        url = uri("http://10.10.10.96:3000/api/packages/server/maven") // Replace with your Gitea URL
+        isAllowInsecureProtocol = true
+
+        credentials {
+            username = findProperty("giteaUsername") as String? ?: System.getenv("GITEA_USERNAME")
+            password = findProperty("giteaPassword") as String? ?: System.getenv("GITEA_PASSWORD")
+        }
+    }
 }
 
 dependencies {
@@ -69,14 +79,14 @@ dependencies {
 
 java {
     withSourcesJar()
-    withJavadocJar()
+    //withJavadocJar()
 }
 
 //Automatically download dependencies source code
 idea {
     module {
         isDownloadSources = true
-        isDownloadJavadoc = false
+        //isDownloadJavadoc = false
     }
 }
 
@@ -92,8 +102,8 @@ tasks.register<DefaultTask>("buildFast") {
     dependsOn(tasks.build)
     group = "alpha build"
     tasks["delombok"].enabled = false
-    tasks["javadoc"].enabled = false
-    tasks["javadocJar"].enabled = false
+    //tasks["javadoc"].enabled = false
+    //tasks["javadocJar"].enabled = false
     tasks["sourcesJar"].enabled = false
     tasks["copyDependencies"].enabled = false
     tasks["shadowJar"].enabled = false
@@ -108,8 +118,8 @@ tasks.register<DefaultTask>("buildSkipChores") {
     dependsOn(tasks.build)
     group = "alpha build"
     tasks["delombok"].enabled = false
-    tasks["javadoc"].enabled = false
-    tasks["javadocJar"].enabled = false
+    //tasks["javadoc"].enabled = false
+    //tasks["javadocJar"].enabled = false
     tasks["sourcesJar"].enabled = false
     tasks["compileTestJava"].enabled = false
     tasks["processTestResources"].enabled = false
@@ -122,8 +132,8 @@ tasks.register<DefaultTask>("buildForGithubAction") {
     dependsOn(tasks.build)
     group = "build"
     tasks["delombok"].enabled = false
-    tasks["javadoc"].enabled = false
-    tasks["javadocJar"].enabled = false
+    //tasks["javadoc"].enabled = false
+    //tasks["javadocJar"].enabled = false
 }
 
 tasks.build {
@@ -197,9 +207,11 @@ tasks.register<Copy>("copyDependencies") {
     into(layout.buildDirectory.dir("libs"))
 }
 
-tasks.javadoc {
+tasks.javadoc {}
+    /*
     options.encoding = StandardCharsets.UTF_8.name()
-    includes.add("**/**.java")
+
+    includes.add("** / **.java")
     val javadocOptions = options as CoreJavadocOptions
     javadocOptions.addStringOption(
         "source",
@@ -207,19 +219,31 @@ tasks.javadoc {
     )
     // Suppress some meaningless warnings
     javadocOptions.addStringOption("Xdoclint:none", "-quiet")
-}
+    }
+
+     */
 
 publishing {
     publications.create<MavenPublication>("maven") {
         from(components["java"])
         pom {
             repositories {
-                mavenLocal()
+                /*mavenLocal()
                 mavenCentral()
                 maven("https://repo.maven.apache.org/maven2/")
                 maven("https://jitpack.io")
                 maven("https://repo.opencollab.dev/maven-releases/")
-                maven("https://repo.opencollab.dev/maven-snapshots/")
+                maven("https://repo.opencollab.dev/maven-snapshots/")*/
+                maven {
+                    url = uri("http://10.10.10.96:3000/api/packages/server/maven") // Replace with your Gitea URL
+                    isAllowInsecureProtocol = true
+
+                    credentials {
+                        username = findProperty("giteaUsername") as String? ?: System.getenv("GITEA_USERNAME")
+                        password = findProperty("giteaPassword") as String? ?: System.getenv("GITEA_PASSWORD")
+                    }
+                }
+
             }
         }
     }
