@@ -93,14 +93,14 @@ public class CraftRecipeActionProcessor implements ItemStackRequestActionProcess
             Item first = inventory.getItem(0);
             Item second = inventory.getItem(1);
             if (first.isNull() && second.isNull()) {
-                log.error("Can't find trade input!");
+                log.error("Can't find trade input1!");
                 return context.error();
             }
             boolean ca = tradeRecipe.contains("buyA");
             boolean cb = tradeRecipe.contains("buyB");
             if (ca && cb) {
                 if ((first.isNull() || second.isNull())) {
-                    log.error("Can't find trade input!");
+                    log.error("Can't find trade input2!");
                     return context.error();
                 } else {
                     if (checkTrade(tradeRecipe.getCompound("buyA"), first)) return context.error();
@@ -109,7 +109,7 @@ public class CraftRecipeActionProcessor implements ItemStackRequestActionProcess
                 }
             } else if (ca) {
                 if (first.isNull()) {
-                    log.error("Can't find trade input!");
+                    log.error("Can't find trade input3!");
                     return context.error();
                 } else {
                     if (checkTrade(tradeRecipe.getCompound("buyA"), first)) return context.error();

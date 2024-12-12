@@ -41,7 +41,7 @@ public class NetworkMapping {
                  STONECUTTER_INPUT, STONECUTTER_RESULT,
                  GRINDSTONE_ADDITIONAL, GRINDSTONE_INPUT, GRINDSTONE_RESULT,
                  CARTOGRAPHY_INPUT, CARTOGRAPHY_ADDITIONAL, CARTOGRAPHY_RESULT,
-                 LEVEL_ENTITY, SHULKER_BOX -> {
+                 LEVEL_ENTITY, SHULKER_BOX, TRADE_INGREDIENT_1, TRADE_INGREDIENT_2, TRADE_RESULT -> {
                 if (player.getFakeInventoryOpen() && player.getTopWindow().isPresent() && player.getTopWindow().get() instanceof FakeInventory) {
                     yield player.getTopWindow().get();
                 } else if (player.getEnderChestOpen()) {

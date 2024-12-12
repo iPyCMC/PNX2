@@ -2,6 +2,8 @@ package cn.nukkit.inventory.fake;
 
 import cn.nukkit.block.BlockID;
 import cn.nukkit.blockentity.BlockEntity;
+import cn.nukkit.entity.EntityID;
+import cn.nukkit.inventory.Inventory;
 import cn.nukkit.inventory.InventoryType;
 
 public enum FakeInventoryType {
@@ -14,7 +16,8 @@ public enum FakeInventoryType {
     DROPPER(InventoryType.DROPPER, new SingleFakeBlock(BlockID.DROPPER, BlockEntity.DROPPER), 9),
     HOPPER(InventoryType.HOPPER, new SingleFakeBlock(BlockID.HOPPER, BlockEntity.HOPPER), 5),
     SHULKER_BOX(InventoryType.CONTAINER, new SingleFakeBlock(BlockID.UNDYED_SHULKER_BOX, BlockEntity.SHULKER_BOX), 27),
-    WORKBENCH(InventoryType.WORKBENCH, new SingleFakeBlock(BlockID.CRAFTING_TABLE, "default"), 9);
+    WORKBENCH(InventoryType.WORKBENCH, new SingleFakeBlock(BlockID.CRAFTING_TABLE, "default"), 9),
+    TRADE(InventoryType.TRADE, new FakeEntity(EntityID.VILLAGER_V2), 3);
 
     final InventoryType inventoryType;
     final FakeBlock fakeBlock;
@@ -27,6 +30,6 @@ public enum FakeInventoryType {
     }
 
     public boolean isCraftType() {
-        return this == WORKBENCH || this == FURNACE || this == BREWING_STAND;
+        return this == WORKBENCH || this == FURNACE || this == BREWING_STAND || this == TRADE;
     }
 }

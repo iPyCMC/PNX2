@@ -155,7 +155,8 @@ public class EntityHuman extends EntityHumanType {
             this.hasSpawned.put(player.getLoaderId(), player);
 
             if (!this.skin.isValid()) {
-                throw new IllegalStateException(this.getClass().getSimpleName() + " must have a valid skin set");
+                //return;
+                //throw new IllegalStateException(this.getClass().getSimpleName() + " must have a valid skin set");
             }
 
             if (this instanceof Player)

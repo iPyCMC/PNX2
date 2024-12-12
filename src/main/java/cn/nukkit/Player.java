@@ -649,7 +649,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
             int chunkX = Level.getHashX(index);
             int chunkZ = Level.getHashZ(index);
             for (Entity entity : this.level.getChunkEntities(chunkX, chunkZ).values()) {
-                if (this != entity && !entity.closed && entity.isAlive()) {
+                if (this != entity && !entity.closed && entity.isAlive() && entity.spawnOnJoin) {
                     entity.spawnTo(this);
                 }
             }
@@ -839,6 +839,7 @@ public class Player extends EntityHuman implements CommandSender, ChunkLoader, I
 
     protected void checkNearEntities() {
         for (Entity entity : this.level.getNearbyEntities(this.boundingBox.grow(1, 0.5, 1), this)) {
+            if(entity == null) continue;
             entity.scheduleUpdate();
 
             if (!entity.isAlive() || !this.isAlive()) {

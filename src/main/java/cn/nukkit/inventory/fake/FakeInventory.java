@@ -2,16 +2,21 @@ package cn.nukkit.inventory.fake;
 
 import cn.nukkit.Player;
 import cn.nukkit.Server;
+import cn.nukkit.block.BlockID;
 import cn.nukkit.event.inventory.ItemStackRequestActionEvent;
 import cn.nukkit.inventory.BaseInventory;
 import cn.nukkit.inventory.InputInventory;
 import cn.nukkit.inventory.Inventory;
 import cn.nukkit.inventory.InventoryHolder;
+import cn.nukkit.inventory.InventoryType;
 import cn.nukkit.inventory.request.NetworkMapping;
 import cn.nukkit.item.Item;
 import cn.nukkit.math.Vector3;
+import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.network.protocol.ContainerClosePacket;
 import cn.nukkit.network.protocol.ContainerOpenPacket;
+import cn.nukkit.network.protocol.UpdateTradePacket;
 import cn.nukkit.network.protocol.types.itemstack.ContainerSlotType;
 import cn.nukkit.network.protocol.types.itemstack.request.ItemStackRequestSlotData;
 import cn.nukkit.network.protocol.types.itemstack.request.action.ItemStackRequestAction;
@@ -19,6 +24,7 @@ import cn.nukkit.network.protocol.types.itemstack.request.action.SwapAction;
 import cn.nukkit.network.protocol.types.itemstack.request.action.TransferItemStackRequestAction;
 import cn.nukkit.plugin.InternalPlugin;
 import cn.nukkit.recipe.Input;
+import cn.nukkit.utils.TradeRecipeBuildUtils;
 import com.google.common.collect.BiMap;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -84,6 +90,17 @@ public class FakeInventory extends BaseInventory implements InputInventory {
                     map2.put(i, ContainerSlotType.CRAFTING_INPUT);
                 }
             }
+
+            case TRADE -> {
+                Map<Integer, ContainerSlotType> map = super.slotTypeMap();
+                map.put(0, ContainerSlotType.TRADE2_INGREDIENT_1);
+                map.put(1, ContainerSlotType.TRADE2_INGREDIENT_2);
+
+                BiMap<Integer, Integer> networkedSlotMap = super.networkSlotMap();
+                networkedSlotMap.put(0, 4);
+                networkedSlotMap.put(1, 5);
+
+            }
         }
     }
 
@@ -101,22 +118,50 @@ public class FakeInventory extends BaseInventory implements InputInventory {
         player.setFakeInventoryOpen(true);
         this.fakeBlock.create(player, this.getTitle());
         Server.getInstance().getScheduler().scheduleDelayedTask(InternalPlugin.INSTANCE, () -> {
-            ContainerOpenPacket packet = new ContainerOpenPacket();
-            packet.windowId = player.getWindowId(this);
-            packet.type = this.getType().getNetworkType();
-
-            Optional<Vector3> first = this.fakeBlock.getLastPositions().stream().findFirst();
-            if (first.isPresent()) {
-                Vector3 position = first.get();
-                packet.x = position.getFloorX();
-                packet.y = position.getFloorY();
-                packet.z = position.getFloorZ();
-                player.dataPacket(packet);
-
-                super.onOpen(player);
-                this.sendContents(player);
+            if(type == InventoryType.TRADE) {
+                FakeEntity entity = (FakeEntity) this.fakeBlock;
+                var pk1 = new UpdateTradePacket();
+                pk1.containerId = (byte) player.getWindowId(this);
+                pk1.tradeTier = 1;
+                pk1.traderUniqueEntityId = entity.getId();
+                pk1.playerUniqueEntityId = player.getId();
+                pk1.displayName = "Test";
+                var tierExpRequirements = new ListTag<CompoundTag>();
+                pk1.offers = new CompoundTag()
+                        .putList("Recipes", new ListTag<CompoundTag>().add(
+                                TradeRecipeBuildUtils.of(
+                                                Item.get(BlockID.DIRT,0,1),
+                                                Item.get(BlockID.GRAVEL,0,1),
+                                                Item.get(Item.SAND,0,1)
+                                        )
+                                        .setMaxUses(9999)
+                                        .setTier(1)
+                                        .setRewardExp((byte) 0)
+                                        .setTraderExp(0)
+                                        .build()
+                        ))
+                        .putList("TierExpRequirements", tierExpRequirements);
+                pk1.newTradingUi = false;
+                pk1.usingEconomyTrade = false;
+                player.dataPacket(pk1);
             } else {
-                this.fakeBlock.remove(player);
+                ContainerOpenPacket packet = new ContainerOpenPacket();
+                packet.windowId = player.getWindowId(this);
+                packet.type = this.getType().getNetworkType();
+
+                Optional<Vector3> first = this.fakeBlock.getLastPositions().stream().findFirst();
+                if (first.isPresent()) {
+                    Vector3 position = first.get();
+                    packet.x = position.getFloorX();
+                    packet.y = position.getFloorY();
+                    packet.z = position.getFloorZ();
+                    player.dataPacket(packet);
+
+                    super.onOpen(player);
+                    this.sendContents(player);
+                } else {
+                    this.fakeBlock.remove(player);
+                }
             }
         }, 5);
     }

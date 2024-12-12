@@ -76,6 +76,63 @@ public class Skin {
         return isValidSkin() && isValidResourcePatch();
     }
 
+    private void log(String msg) {
+        System.out.println(msg);
+    }
+
+    public boolean isValidSkin() {
+        if (this.skinId == null || this.skinId.trim().isEmpty()) {
+            log("Skin ID is null or empty");
+            return false;
+        }
+        if (this.skinId.length() >= 100) {
+            log("Skin ID length is 100 or more");
+            return false;
+        }
+        if (this.skinData == null) {
+            log("Skin data is null");
+            return false;
+        }
+        if (this.skinData.width < 32) {
+            log("Skin data width is less than 32");
+            return false;
+        }
+        if (this.skinData.height < 32) {
+            log("Skin data height is less than 32");
+            return false;
+        }
+        if (this.skinData.data.length < SINGLE_SKIN_SIZE) {
+            log("Skin data length is less than 4096");
+            return false;
+        }
+        if (this.playFabId != null && this.playFabId.length() >= 100) {
+            log("PlayFab ID length is 100 or more");
+            return false;
+        }
+        if (this.capeId != null && this.capeId.length() >= 100) {
+            log("Cape ID length is 100 or more");
+            return false;
+        }
+        if (this.skinColor != null && this.skinColor.length() >= 100) {
+            log("Skin color length is 100 or more");
+            return false;
+        }
+        if (this.armSize != null && this.armSize.length() >= 100) {
+            log("Arm size length is 100 or more");
+            return false;
+        }
+        if (this.fullSkinId != null && this.fullSkinId.length() >= 200) {
+            log("Full skin ID length is 200 or more");
+            return false;
+        }
+        if (this.geometryDataEngineVersion != null && this.geometryDataEngineVersion.length() >= 100) {
+            log("Geometry data engine version length is 100 or more");
+            return false;
+        }
+        return true;
+    }
+
+    /*
     private boolean isValidSkin() {
         return skinId != null && !skinId.trim().isEmpty() && skinId.length() < 100 &&
                 skinData != null && skinData.width >= 32 && skinData.height >= 32 &&
@@ -86,7 +143,9 @@ public class Skin {
                 (armSize == null || armSize.length() < 100) &&
                 (fullSkinId == null || fullSkinId.length() < 200) &&
                 (geometryDataEngineVersion == null || geometryDataEngineVersion.length() < 100);
+
     }
+         */
 
     private boolean isValidResourcePatch() {
         if (skinResourcePatch == null || skinResourcePatch.length() > 1000) {
